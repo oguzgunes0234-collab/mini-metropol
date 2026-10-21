@@ -8,14 +8,23 @@ Godot 4 ile geliştiriliyor.
 
 ## Mac'te oyunu deneme
 
-1. Godot **4.7.2** sürümünü indir: <https://godotengine.org/download/archive/>
-   (macOS, "Standard" sürüm — .NET değil). Sürüm 4.7.x olmalı.
-2. Bu depoyu indir: GitHub sayfasında **Code → Download ZIP**, ardından ZIP'i aç.
-3. Godot'yu aç → **Import** → açtığın klasördeki `project.godot` dosyasını seç.
-4. Proje açılınca sağ üstteki **▶ (Run Project)** düğmesine bas.
+1. Godot **4.7.2**'yi indir: <https://godotengine.org/download/archive/>
+   → 4.7.2 → macOS → **Standard** (".NET" olmayan). Sürüm 4.7.x olmalı.
+2. Projeyi indir. GitHub'da geliştirme dalını seç ve **Code → Download ZIP**
+   ile indir, ardından ZIP'i aç.
+3. Godot'yu aç → **Import** → açtığın klasördeki `project.godot` dosyasını seç
+   → **Import & Edit**.
+4. Sağ üstteki **▶ (Run Project)** düğmesine bas (kısayol: `Cmd+B`).
 
-Fareyle sürükle, bırakınca bina düşer. `R` tuşu yeniden başlatır,
-`F3` geliştirici göstergesini açar/kapatır.
+### Kontroller
+
+| Girdi | Ne yapar |
+|---|---|
+| Fareyle sürükle, bırak | Nişan al ve binayı bırak (telefonda parmakla) |
+| `Boşluk` | Nişan alınan yere bırak |
+| `R` | Yeniden başlat |
+| `F3` | Geliştirici göstergesi (FPS, bina sayısı, fizik süresi) |
+| `B` | Bina şeklini değiştir: daire ↔ yuvarlatılmış kare (deneysel) |
 
 ## Klasör yapısı
 
@@ -25,13 +34,17 @@ Fareyle sürükle, bırakınca bina düşer. `R` tuşu yeniden başlatır,
 | `scripts/core/` | Ekrandan bağımsız oyun kuralları (birleşme, puan, sıradaki bina). |
 | `scripts/game/` | Oyun sahnesi: bina, oyun alanı, bırakıcı, arayüz. |
 | `scenes/` | Godot sahneleri. |
-| `tests/` | Otomatik testler ve stres simülasyonu. |
-| `tools/` | Kurulum ve test betikleri. |
-| `docs/` | Mimari, kararlar, test ve görsel lisans notları. |
+| `i18n/` | Türkçe ve İngilizce metinler. |
+| `tests/` | Otomatik testler, tutarlılık denetimi, test botu. |
+| `tools/` | Kurulum, test, simülasyon, lint ve ekran görüntüsü betikleri. |
+| `docs/` | [Mimari](docs/ARCHITECTURE.md), [kararlar](docs/DECISIONS.md), [testler](docs/TESTING.md), [görsel lisansları](docs/ASSETS.md). |
 
-## Testleri çalıştırma (geliştirici)
+## Geliştirici komutları (Linux)
 
 ```sh
-tools/run_tests.sh          # birim + entegrasyon testleri
-tools/run_sim.sh            # stres simülasyonu
+tools/setup_env.sh      # Godot 4.7.2 kurulumu (Nix ile)
+tools/run_tests.sh      # birim + entegrasyon testleri
+tools/run_sim.sh 5000   # stres simülasyonu
+tools/lint.sh           # GDScript denetimi
+tools/screenshots.sh    # ekran görüntüleri
 ```

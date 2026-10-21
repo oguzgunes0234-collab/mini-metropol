@@ -5,7 +5,7 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 GODOT="${GODOT:-godot}"
-mkdir -p reports
+mkdir -p reports && touch reports/.gdignore  # Godot bu klasörü içe aktarmasın
 
 "$GODOT" --headless --path . --import >/dev/null 2>&1
 

@@ -185,6 +185,8 @@ func highest_level() -> int:
 
 func _physics_process(delta: float) -> void:
 	sim_time += delta
+	for b in buildings:
+		b.keep_upright()
 	if not active:
 		return
 	_resolve_merges()

@@ -28,6 +28,9 @@ func _run() -> void:
 		printerr("Veri hatalı: ", data.errors)
 		quit(2)
 		return
+	# --ticks: fizik adım sıklığı denemesi (komut satırında --fixed-fps aynı değer verilmeli).
+	if _opts.has("ticks"):
+		Engine.physics_ticks_per_second = int(_opts.ticks)
 	var target := int(_opts.drops)
 	var seed_value := int(_opts.seed)
 	var bot := SimBot.new(SimBot.kind_from_name(String(_opts.bot)), seed_value)
@@ -157,7 +160,8 @@ func _measure_penetration(board: Board, frame: int) -> void:
 	var resting := false
 	for b in board.buildings:
 		var r := b.current_radius()
-		var pen := maxf(maxf(r - b.position.x, b.position.x - (board.width - r)), b.position.y - (board.height - r))
+		var box := b.bounds()
+		var pen := maxf(maxf(-box.position.x, box.end.x - board.width), box.end.y - board.height)
 		var rel := pen / r
 		var slow := b.linear_velocity.length() < 120.0
 		_pen_max = maxf(_pen_max, rel)

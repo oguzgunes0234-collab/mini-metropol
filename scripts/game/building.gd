@@ -28,6 +28,7 @@ var _max_up_speed := 0.0
 var _grow_from := 1.0
 var _grow_elapsed := 0.0
 var _grow_duration := 0.0
+var _drawn_rotation := 0.0
 
 
 func setup(p_uid: int, def: Dictionary, data: GameData, material: PhysicsMaterial, p_origin: String, p_born_time: float, grow_from: float = 1.0) -> void:
@@ -81,13 +82,20 @@ func current_radius() -> float:
 
 ## Binanın en üst noktasının (Board yerel koordinatında) y değeri.
 func top_y() -> float:
+	return bounds().position.y
+
+
+## Fizik şeklinin Board yerel koordinatındaki sınır kutusu.
+func bounds() -> Rect2:
 	if shape_mode == "rounded_box":
-		var min_y := INF
 		var xf := Transform2D(rotation, position)
-		for p in (_shape as ConvexPolygonShape2D).points:
-			min_y = minf(min_y, (xf * p).y)
-		return min_y
-	return position.y - current_radius()
+		var pts := (_shape as ConvexPolygonShape2D).points
+		var rect := Rect2(xf * pts[0], Vector2.ZERO)
+		for p in pts:
+			rect = rect.expand(xf * p)
+		return rect
+	var r := current_radius()
+	return Rect2(position - Vector2(r, r), Vector2(r, r) * 2.0)
 
 
 func _physics_process(delta: float) -> void:
@@ -119,9 +127,22 @@ func _apply_scale(s: float) -> void:
 	if _shape is CircleShape2D:
 		(_shape as CircleShape2D).radius = radius * grow
 	else:
-		(_shape as ConvexPolygonShape2D).points = BuildingArt.rounded_box_points(radius * grow)
+		# set_point_cloud noktaları fizik motorunun beklediği sıraya koyar;
+		# sıra ters olursa yüzey yönleri ters hesaplanır ve gövdeler gömülür.
+		(_shape as ConvexPolygonShape2D).set_point_cloud(BuildingArt.rounded_box_points(radius * grow))
 	queue_redraw()
 
 
+## Dairesel gövde fizikte yuvarlanır ama bina çizimi hep dik durur: gövde
+## döndükçe çizim ters açıyla yeniden yapılır. Board her fizik adımında çağırır.
+## (Godot, fiziğin taşıdığı gövdeler için dönüşüm bildirimi göndermez.)
+func keep_upright() -> void:
+	if shape_mode == "circle" and absf(rotation - _drawn_rotation) > 0.004:
+		queue_redraw()
+
+
 func _draw() -> void:
+	if shape_mode == "circle":
+		_drawn_rotation = rotation
+		draw_set_transform(Vector2.ZERO, -rotation)
 	BuildingArt.draw_building(self, _def, current_radius(), shape_mode)

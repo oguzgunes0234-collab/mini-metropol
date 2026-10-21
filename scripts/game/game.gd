@@ -119,6 +119,11 @@ func _unhandled_input(event: InputEvent) -> void:
 				hud.toggle_debug()
 			KEY_SPACE:
 				_request_drop()
+			KEY_B:
+				# Geliştirici: daire / yuvarlatılmış kare (deneysel) şekilleri karşılaştır.
+				var physics := data.section("physics")
+				physics.shape_mode = "rounded_box" if physics.shape_mode == "circle" else "circle"
+				get_tree().reload_current_scene()
 
 
 func _notification(what: int) -> void:
