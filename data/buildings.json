@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "_note": "Bina seviyeleri. radius: piksel (1080 genişlikli tasarım çözünürlüğünde). merge_score: bu seviye birleşmeyle oluştuğunda verilen puan. Renkler geçici çizimler içindir.",
+  "levels": [
+    { "level": 1, "id": "hut",        "name_key": "BUILDING_1", "radius": 50,   "mass": 1.0,  "merge_score": 0,    "color": "#D9B48A", "accent": "#8C6239" },
+    { "level": 2, "id": "house",      "name_key": "BUILDING_2", "radius": 65,   "mass": 1.5,  "merge_score": 10,   "color": "#F28C6B", "accent": "#A9432B" },
+    { "level": 3, "id": "villa",      "name_key": "BUILDING_3", "radius": 82,   "mass": 2.1,  "merge_score": 25,   "color": "#F6C453", "accent": "#A87A1E" },
+    { "level": 4, "id": "shop",       "name_key": "BUILDING_4", "radius": 102,  "mass": 2.9,  "merge_score": 50,   "color": "#7BC67E", "accent": "#357F40" },
+    { "level": 5, "id": "apartment",  "name_key": "BUILDING_5", "radius": 125,  "mass": 3.9,  "merge_score": 100,  "color": "#5EB8C9", "accent": "#256F7E" },
+    { "level": 6, "id": "office",     "name_key": "BUILDING_6", "radius": 150,  "mass": 5.2,  "merge_score": 200,  "color": "#6C8EE6", "accent": "#34509E" },
+    { "level": 7, "id": "mall",       "name_key": "BUILDING_7", "radius": 178,  "mass": 6.7,  "merge_score": 400,  "color": "#A77BDB", "accent": "#5F3B93" },
+    { "level": 8, "id": "skyscraper", "name_key": "BUILDING_8", "radius": 208,  "mass": 8.4,  "merge_score": 800,  "color": "#E8789F", "accent": "#9C365E" },
+    { "level": 9, "id": "landmark",   "name_key": "BUILDING_9", "radius": 240,  "mass": 10.5, "merge_score": 1600, "color": "#F2B33D", "accent": "#2F4858" }
+  ]
+}

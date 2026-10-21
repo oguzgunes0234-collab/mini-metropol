@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "_note": "Genel oyun kuralları ve fizik ayarları. Bölümler ileride bu değerlerin bir kısmını kendi verileriyle geçersiz kılabilecek.",
+  "board": {
+    "width": 900,
+    "height": 1280,
+    "wall_thickness": 240,
+    "wall_extra_height": 900
+  },
+  "physics": {
+    "gravity_scale": 1.6,
+    "friction": 0.45,
+    "bounce": 0.05,
+    "linear_damp": 0.15,
+    "angular_damp": 1.2,
+    "max_speed": 2200.0,
+    "max_up_speed": 1400.0,
+    "shape_mode": "circle"
+  },
+  "drop": {
+    "cooldown_sec": 0.55,
+    "dropper_y": -120.0,
+    "spawn_levels": [1, 2, 3, 4],
+    "spawn_weights": [40, 30, 20, 10],
+    "preview_count": 1
+  },
+  "merge": {
+    "grow_start_scale": 0.55,
+    "grow_duration_sec": 0.14,
+    "inherit_velocity": 0.4,
+    "chain_bonus_per_step": 0.25,
+    "chain_bonus_max_steps": 8
+  },
+  "final_level": {
+    "rule": "landmark",
+    "bonus_score": 5000
+  },
+  "game_over": {
+    "danger_line_y": 0.0,
+    "danger_time_sec": 2.5,
+    "drop_grace_sec": 1.2
+  }
+}

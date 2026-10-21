@@ -1,0 +1,23 @@
+keys,tr,en
+BUILDING_1,Kulübe,Hut
+BUILDING_2,Küçük Ev,Cottage
+BUILDING_3,Modern Ev,Modern House
+BUILDING_4,Mahalle Dükkânı,Corner Shop
+BUILDING_5,Apartman,Apartment
+BUILDING_6,Ofis Binası,Office Building
+BUILDING_7,Ticaret Merkezi,Shopping Center
+BUILDING_8,Gökdelen,Skyscraper
+BUILDING_9,İkonik Kule,Landmark Tower
+HUD_SCORE,PUAN,SCORE
+HUD_NEXT,SIRADAKİ,NEXT
+HUD_MOVES,Hamle,Moves
+HUD_RESTART,Yeniden,Restart
+GAMEOVER_TITLE,Arsa doldu!,The lot is full!
+GAMEOVER_SCORE,Puan: %d,Score: %d
+GAMEOVER_BEST,En iyi: %d,Best: %d
+GAMEOVER_RETRY,Tekrar Oyna,Play Again
+PAUSE_TITLE,Duraklatıldı,Paused
+PAUSE_RESUME,Devam Et,Resume
+CHAIN_FMT,Zincir x%d,Chain x%d
+LANDMARK_DONE,Anıt tamamlandı!,Landmark complete!
+DATA_ERROR,Oyun verisi hatalı:,Game data error:
