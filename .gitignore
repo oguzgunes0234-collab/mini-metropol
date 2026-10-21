@@ -1,0 +1,30 @@
+# Godot 4 tarafından üretilen önbellek ve içe aktarma klasörü
+.godot/
+/android/
+
+# Dışa aktarma çıktıları (APK, AAB, IPA, web derlemeleri)
+/build/
+/exports/
+*.apk
+*.aab
+*.ipa
+
+# İmza anahtarları ve kimlik bilgileri — ASLA Git'e eklenmez
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+*.cer
+*.pem
+.env
+.env.*
+export_credentials.cfg
+
+# Test ve simülasyon çıktıları
+/reports/
+
+# İşletim sistemi ve editör dosyaları
+.DS_Store
+Thumbs.db
+*.tmp
+*~
