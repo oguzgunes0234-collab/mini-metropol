@@ -70,6 +70,38 @@ func make_session(data: GameData = null, seed_value: int = 1) -> GameSession:
 	return session
 
 
+## Testler için küçük bir bölüm tanımı; overrides ile alanları değiştirilir.
+func level_dict(overrides: Dictionary = {}) -> Dictionary:
+	var d := {
+		"id": "T-01", "name_key": "LEVEL_1_01", "hint_key": "HINT_1_01",
+		"region": "test", "difficulty": 1, "mechanic": "test",
+		"seed": 1, "moves": 10,
+		"goals": [{"type": "build", "level": 2, "count": 1}],
+		"stars": [{"type": "complete"}, {"type": "moves_used_max", "value": 5}, {"type": "score", "value": 10}],
+		"rewards": {"coins_first": 0, "coins_repeat": 0},
+	}
+	d.merge(overrides, true)
+	return d
+
+
+## Bölüm kipinde oturum. level: bölüm kimliği (data/levels.json) veya level_dict() sözlüğü.
+func make_level_session(level: Variant) -> GameSession:
+	var s := make_session()
+	var cat: LevelCatalog
+	var lv: Dictionary
+	if level is String:
+		cat = LevelCatalog.load_default()
+		lv = cat.get_level(level)
+	else:
+		cat = LevelCatalog.from_dict({"levels": [level]}, GameData.load_default())
+		if not cat.is_valid():
+			fail("test bölümü geçersiz: %s" % "\n".join(cat.errors))
+			return s
+		lv = cat.levels[0]
+	s.start_level(lv, cat.data_for(lv))
+	return s
+
+
 ## Varsayılan veri dosyalarının derin kopyası (testte değiştirmek için).
 func default_dicts() -> Dictionary:
 	return {

@@ -41,7 +41,7 @@ func check(session: GameSession) -> void:
 	var board := session.board
 
 	var held := board.total_value() + int(board.stats.landmark_value) + int(board.stats.lost_value)
-	var expected := int(board.stats.dropped_value) + extra_value
+	var expected := int(board.stats.dropped_value) + int(board.stats.placed_value) + extra_value
 	if held != expected:
 		_violation("değer korunumu bozuldu: alandaki+anıt+kayıp=%d, beklenen=%d" % [held, expected])
 

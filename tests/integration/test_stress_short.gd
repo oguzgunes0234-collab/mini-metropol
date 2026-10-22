@@ -12,7 +12,7 @@ func _play(bot_kind: SimBot.Kind, seed_value: int, drops: int) -> Invariants:
 	while done < drops:
 		await tree.physics_frame
 		inv.check(s)
-		if s.state == GameSession.State.GAME_OVER:
+		if s.state == GameSession.State.LOST:
 			s.start(seed_value + restarts + 1)
 			restarts += 1
 			inv.reset()

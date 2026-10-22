@@ -25,6 +25,8 @@ static var _default: GameData
 var levels: Array[Dictionary] = []
 var rules: Dictionary = {}
 var errors: PackedStringArray = []
+## Doğrulanmış ham bina verisi (bölümler kendi kurallarıyla yeni GameData üretirken kullanır).
+var source_buildings: Dictionary = {}
 
 var max_level: int:
 	get:
@@ -100,6 +102,7 @@ func _apply(buildings: Dictionary, rules_dict: Dictionary) -> void:
 		levels.clear()
 		return
 	rules = rules_dict
+	source_buildings = buildings
 
 
 func _validate_buildings(buildings: Dictionary) -> void:

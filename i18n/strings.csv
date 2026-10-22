@@ -11,13 +11,67 @@ BUILDING_9,İkonik Kule,Landmark Tower
 HUD_SCORE,PUAN,SCORE
 HUD_NEXT,SIRADAKİ,NEXT
 HUD_MOVES,Hamle,Moves
+HUD_MOVES_LEFT,HAMLE,MOVES
 HUD_RESTART,Yeniden,Restart
+HUD_PAUSE,Menü,Menu
+HUD_SETTLING,Son hamle: binalar yerleşiyor…,Last move: settling…
 GAMEOVER_TITLE,Arsa doldu!,The lot is full!
 GAMEOVER_SCORE,Puan: %d,Score: %d
 GAMEOVER_BEST,En iyi: %d,Best: %d
 GAMEOVER_RETRY,Tekrar Oyna,Play Again
 PAUSE_TITLE,Duraklatıldı,Paused
 PAUSE_RESUME,Devam Et,Resume
+PAUSE_RESTART,Baştan Başla,Restart
+PAUSE_TO_LEVELS,Bölümlere Dön,Back to Levels
 CHAIN_FMT,Zincir x%d,Chain x%d
 LANDMARK_DONE,Anıt tamamlandı!,Landmark complete!
 DATA_ERROR,Oyun verisi hatalı:,Game data error:
+UI_LEVELS,Bölümler,Levels
+UI_FREE_PLAY,Serbest Oyun,Free Play
+UI_START,Başla,Start
+UI_NEXT,Sonraki Bölüm,Next Level
+UI_RETRY,Tekrar Dene,Try Again
+UI_REPLAY,Tekrar Oyna,Play Again
+UI_LOCKED,Kilitli,Locked
+UI_LEVEL_FMT,Bölüm %s,Level %s
+UI_STARS_TOTAL,Yıldız: %d / %d,Stars: %d / %d
+UI_GOALS,HEDEFLER,GOALS
+UI_STARS,YILDIZLAR,STARS
+UI_UNLOCK_ALL,Tüm bölümler açıldı (geliştirici),All levels unlocked (developer)
+REGION_STARTER,Başlangıç Mahallesi,Starter District
+GOAL_BUILD,%s üret,Build %s
+GOAL_SCORE,%d puana ulaş,Reach %d points
+GOAL_CHAIN,x%d zincir yap,Make a x%d chain
+GOAL_LANDMARK,Anıt tamamla,Complete a landmark
+STAR_COMPLETE,Bölümü tamamla,Complete the level
+STAR_MOVES,En fazla %d hamle,At most %d moves
+STAR_SCORE,En az %d puan,At least %d points
+STAR_CHAIN,x%d zincir,A x%d chain
+RESULT_WON,Bölüm tamamlandı!,Level complete!
+RESULT_OUT_OF_MOVES,Hamleler bitti,Out of moves
+RESULT_LOT_FULL,Arsa doldu,The lot is full
+RESULT_MOVES_USED,Hamle: %d / %d,Moves: %d / %d
+TIP_TITLE,İpucu,Tip
+TIP_GENERIC_1,"Büyük binaları bir köşede topla; ortada küçükler için yer kalsın.","Keep big buildings in one corner so small ones have room in the middle."
+TIP_GENERIC_2,"Bırakmadan önce Sıradaki kutusuna bak ve iki hamle sonrasını düşün.","Check the Next box before dropping and think two moves ahead."
+TIP_GENERIC_3,"Aynı binaları yan yana getirmek, yüksek bir kule yığmaktan daha güvenlidir.","Placing matching buildings side by side is safer than stacking a tall tower."
+LEVEL_1_01,İlk Temel,First Foundation
+LEVEL_1_02,Komşular,Neighbours
+LEVEL_1_03,Köşe Dükkânı,Corner Shop
+LEVEL_1_04,Zincirleme,Chain Reaction
+LEVEL_1_05,Puan Avı,Score Hunt
+LEVEL_1_06,Dar Sokak,Narrow Street
+LEVEL_1_07,Kayalık Arsa,Rocky Lot
+LEVEL_1_08,Apartman Sırası,Apartment Row
+LEVEL_1_09,Karma Plan,Mixed Plan
+LEVEL_1_10,Ofis Kulesi,Office Tower
+HINT_1_01,"Aynı binaları üst üste bırak: iki kulübe birleşip küçük eve dönüşür.","Drop matching buildings onto each other: two huts merge into a cottage."
+HINT_1_02,"Sağ üstteki Sıradaki kutusuna bak; bir sonraki binayı ona göre planla.","Watch the Next box at the top right and plan your next drop."
+HINT_1_03,"Küçük binaları bir köşede topla; büyükler ortada yer bulur.","Gather small buildings in a corner so bigger ones have room."
+HINT_1_04,"Ortadaki kulübenin üstüne bir kulübe bırak: yeni ev alttakiyle de birleşir. Buna zincir denir.","Drop a hut on the middle hut: the new cottage merges with the one below. That is a chain."
+HINT_1_05,"Zincirler daha fazla puan verir. Birleşmeleri arka arkaya dizmeye çalış.","Chains score more. Line up merges so they trigger one after another."
+HINT_1_06,"Arsa dar! Binaları yan yana değil, üst üste düşün.","The lot is narrow! Think in stacks, not rows."
+HINT_1_07,"Kayalar yer kaplar ve binaları saptırır. Boşlukları akıllıca kullan.","Rocks take up space and deflect buildings. Use the gaps wisely."
+HINT_1_08,"İki apartman için alanı düzenli tut; büyük binaları bir kenarda topla.","Keep the lot tidy for two apartments; gather big buildings on one side."
+HINT_1_09,"Üç hedefin hepsini tamamla: apartman, puan ve üçlü zincir.","Complete all three goals: an apartment, the score and a triple chain."
+HINT_1_10,"Bariyer arsayı ikiye böler. Hangi tarafta büyüteceğine karar ver.","The barrier splits the lot. Decide which side you will grow on."

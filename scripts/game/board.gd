@@ -30,6 +30,8 @@ var danger_ratio := 0.0
 var is_game_over := false
 ## "danger" (tehlike çizgisi süresi doldu) veya "no_room" (bırakma noktası dolu).
 var game_over_reason := ""
+## Bölümün sabit engelleri (bkz. LevelCatalog).
+var obstacles: Array = []
 ## false iken birleşme ve tehlike kontrolü yapılmaz (oyun sonu).
 var active := true
 var stats := {}
@@ -51,8 +53,22 @@ var _wall_extra := 0.0
 var _panel_style: StyleBoxFlat
 
 
-func setup(p_data: GameData) -> void:
+## Alanı verilen veriye (ve bölümün engellerine) göre kurar. Tekrar
+## çağrılabilir: her bölüm başında alan boyutu, duvarlar ve engeller yeniden kurulur.
+func setup(p_data: GameData, p_obstacles: Array = []) -> void:
+	if _container == null:
+		_container = Node2D.new()
+		_container.name = "Buildings"
+		add_child(_container)
+		_panel_style = StyleBoxFlat.new()
+		_panel_style.bg_color = Color("#FFFDF8")
+		_panel_style.set_corner_radius_all(36)
+		_panel_style.shadow_color = Color(0.18, 0.28, 0.35, 0.12)
+		_panel_style.shadow_size = 18
+		_panel_style.shadow_offset = Vector2(0, 8)
+	reset()
 	data = p_data
+	obstacles = p_obstacles.duplicate(true)
 	var b := data.section("board")
 	width = float(b.width)
 	height = float(b.height)
@@ -74,18 +90,28 @@ func setup(p_data: GameData) -> void:
 	_material.bounce = float(physics.bounce)
 
 	_build_walls()
-	_container = Node2D.new()
-	_container.name = "Buildings"
-	add_child(_container)
 	_reset_stats()
-
-	_panel_style = StyleBoxFlat.new()
-	_panel_style.bg_color = Color("#FFFDF8")
-	_panel_style.set_corner_radius_all(36)
-	_panel_style.shadow_color = Color(0.18, 0.28, 0.35, 0.12)
-	_panel_style.shadow_size = 18
-	_panel_style.shadow_offset = Vector2(0, 8)
 	queue_redraw()
+
+
+## Bölümün başlangıç düzenindeki binayı yerleştirir.
+func place(level: int, pos: Vector2) -> Building:
+	var b := spawn(level, pos, Vector2.ZERO, "layout")
+	stats.placed_value += GameData.value_of(level)
+	return b
+
+
+## Bölüm kazanıldığında: birleşme ve tehlike kontrolü durur, oyun sonu bildirilmez.
+func halt() -> void:
+	active = false
+
+
+## Tüm binalar neredeyse durdu mu? (Son hamleden sonra zincirlerin bitmesini beklemek için.)
+func is_settled(speed: float = 25.0) -> bool:
+	for b in buildings:
+		if b.grow < 1.0 or b.linear_velocity.length_squared() > speed * speed:
+			return false
+	return true
 
 
 ## Oyuncunun bıraktığı binayı oluşturur. x alan sınırlarına sıkıştırılır.
@@ -321,6 +347,7 @@ func _reset_stats() -> void:
 	stats = {
 		"dropped": 0,
 		"dropped_value": 0,
+		"placed_value": 0,
 		"merges": 0,
 		"landmarks": 0,
 		"landmark_value": 0,
@@ -330,6 +357,9 @@ func _reset_stats() -> void:
 
 
 func _build_walls() -> void:
+	if _walls != null:
+		remove_child(_walls)
+		_walls.queue_free()
 	_walls = StaticBody2D.new()
 	_walls.name = "Walls"
 	_walls.collision_layer = Building.LAYER_WALLS
@@ -347,15 +377,27 @@ func _build_walls() -> void:
 	# Görünmez güvenlik tavanı: bırakma noktasının çok üstünde; normal oyunda
 	# hiçbir bina buraya ulaşmaz, yalnızca alandan kaçmayı imkânsız kılar.
 	_add_wall_rect(Vector2(width * 0.5, top - t * 0.5), Vector2(width + t * 2.0, t))
+	# Bölüm engelleri de duvarlarla aynı statik gövdede (aynı katman ve malzeme).
+	for ob in obstacles:
+		if ob.shape == "circle":
+			var circle := CircleShape2D.new()
+			circle.radius = ob.r
+			var col := CollisionShape2D.new()
+			col.shape = circle
+			col.position = Vector2(ob.x, ob.y)
+			_walls.add_child(col)
+		else:
+			_add_wall_rect(Vector2(ob.x, ob.y), Vector2(ob.w, ob.h), deg_to_rad(ob.rot))
 	add_child(_walls)
 
 
-func _add_wall_rect(center: Vector2, size: Vector2) -> void:
+func _add_wall_rect(center: Vector2, size: Vector2, rot: float = 0.0) -> void:
 	var shape := RectangleShape2D.new()
 	shape.size = size
 	var col := CollisionShape2D.new()
 	col.shape = shape
 	col.position = center
+	col.rotation = rot
 	_walls.add_child(col)
 
 
@@ -370,6 +412,21 @@ func _draw() -> void:
 	var edge := Color("#2F4858", 0.18)
 	draw_line(Vector2(0, -24), Vector2(0, height), edge, 4.0, true)
 	draw_line(Vector2(width, -24), Vector2(width, height), edge, 4.0, true)
+	# Engeller (GEÇİCİ ÇİZİM): yuvarlak = kaya, dikdörtgen = şantiye bariyeri.
+	for ob in obstacles:
+		if ob.shape == "circle":
+			draw_circle(Vector2(ob.x, ob.y + 6), ob.r, Color(0.11, 0.16, 0.2, 0.18), true, -1.0, true)
+			draw_circle(Vector2(ob.x, ob.y), ob.r, Color("#8E9AA6"), true, -1.0, true)
+			draw_circle(Vector2(ob.x - ob.r * 0.25, ob.y - ob.r * 0.25), ob.r * 0.45, Color("#B3BDC6"), true, -1.0, true)
+		else:
+			draw_set_transform(Vector2(ob.x, ob.y), deg_to_rad(ob.rot))
+			var rect := Rect2(-ob.w * 0.5, -ob.h * 0.5, ob.w, ob.h)
+			draw_rect(rect, Color("#F6AE2D"))
+			var stripe := 28.0
+			var n := int(ob.w / stripe)
+			for i in range(0, n, 2):
+				draw_rect(Rect2(rect.position.x + i * stripe, rect.position.y, stripe, ob.h), Color("#2F4858"))
+			draw_set_transform(Vector2.ZERO)
 	# Tehlike çizgisi: tehlike arttıkça kırmızılaşır ve kalınlaşır.
 	var calm := Color("#2F4858", 0.28)
 	var alarm := Color("#E4572E", 1.0)

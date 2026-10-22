@@ -170,10 +170,10 @@ func _on_scored(points: int, total: int, info: Dictionary) -> void:
 		Input.vibrate_handheld(15)
 
 
-func _on_finished(final_score: int, _reason: String) -> void:
-	_best_score = maxi(_best_score, final_score)
+func _on_finished(result: Dictionary) -> void:
+	_best_score = maxi(_best_score, result.score)
 	_drop_pending = false
-	hud.show_game_over(final_score, _best_score)
+	hud.show_game_over(result.score, _best_score)
 
 
 func _layout() -> void:

@@ -72,7 +72,7 @@ func _run() -> void:
 		last_usec = Time.get_ticks_usec()
 		max_bodies = maxi(max_bodies, board.building_count())
 
-		if session.state == GameSession.State.GAME_OVER:
+		if session.state == GameSession.State.LOST:
 			games.append(_game_summary(session))
 			total_merges += board.stats.merges
 			total_landmarks += board.stats.landmarks

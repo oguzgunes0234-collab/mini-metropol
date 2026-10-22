@@ -57,13 +57,13 @@ func _tower_session(danger_time: float = -1.0) -> GameSession:
 func test_game_over_when_lot_overflows() -> void:
 	var s := _tower_session()
 	var finished_count := [0]
-	s.finished.connect(func(_score: int, _reason: String): finished_count[0] += 1)
+	s.finished.connect(func(_result: Dictionary): finished_count[0] += 1)
 	var limit := 60 * 15
 	var frames := 0
 	while s.state == GameSession.State.PLAYING and frames < limit:
 		await tree.physics_frame
 		frames += 1
-	assert_eq(s.state, GameSession.State.GAME_OVER, "alan taşınca oyun bitmeli")
+	assert_eq(s.state, GameSession.State.LOST, "alan taşınca oyun bitmeli")
 	await physics_frames(30)
 	assert_eq(finished_count[0], 1, "oyun sonu bir kez bildirilmeli")
 	assert_false(s.board.active)
@@ -84,7 +84,7 @@ func test_drop_into_full_lot_ends_game() -> void:
 			top = b
 	var count := s.board.building_count()
 	assert_false(s.try_drop(top.position.x), "dolu noktaya bırakılmamalı")
-	assert_eq(s.state, GameSession.State.GAME_OVER)
+	assert_eq(s.state, GameSession.State.LOST)
 	assert_eq(s.board.game_over_reason, "no_room")
 	assert_eq(s.board.building_count(), count, "yeni bina oluşmamalı")
 	assert_eq(s.moves, 0)
