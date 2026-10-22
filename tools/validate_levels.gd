@@ -41,7 +41,9 @@ func _run() -> void:
 		base = GameData.load_from_files(String(_opts.buildings), GameData.RULES_PATH)
 	if _opts.has("no_rescue"):
 		Board.rescue_enabled = false
-	var cat := LevelCatalog.load_from_file(String(_opts.get("levels_file", LevelCatalog.LEVELS_PATH)), base)
+	# Deneme dosyalarında bölge kuralı uygulanmaz (dosyada yalnızca denenen bölümler var).
+	var cat := LevelCatalog.load_from_file(String(_opts.get("levels_file", LevelCatalog.LEVELS_PATH)), base,
+		"" if _opts.has("levels_file") else LevelCatalog.REGIONS_PATH)
 	if not cat.is_valid():
 		printerr("Bölüm verisi hatalı:\n", "\n".join(cat.errors))
 		quit(2)
@@ -60,6 +62,9 @@ func _run() -> void:
 	world.add_child(session)
 	board.setup(cat.base)
 	session.setup(cat.base, board)
+	# --iters: fizik çözücü yineleme sayısı denemesi.
+	if _opts.has("iters"):
+		PhysicsServer2D.space_set_param(board.get_world_2d().space, PhysicsServer2D.SPACE_PARAM_SOLVER_ITERATIONS, int(_opts.iters))
 	session.record_events = true
 
 	var started := Time.get_ticks_msec()
@@ -76,7 +81,7 @@ func _run() -> void:
 		for bot_name in bots:
 			var kind := SimBot.kind_from_name(bot_name)
 			var attempts := int(_opts.planner_attempts) if kind == SimBot.Kind.PLANNER else int(_opts.attempts)
-			var stats := {"attempts": attempts, "wins": 0, "stars": [0, 0, 0, 0], "moves_on_win": [], "scores_on_win": [], "chains_on_win": [], "scores": [], "reasons": {}, "violations": 0}
+			var stats := {"attempts": attempts, "wins": 0, "stars": [0, 0, 0, 0], "moves_on_win": [], "scores_on_win": [], "chains_on_win": [], "scores": [], "reasons": {}, "violations": 0, "rescues": 0}
 			for a in attempts:
 				var bot := SimBot.new(kind, hash(lv.id) + a * 7919)
 				session.start_level(lv, cat.data_for(lv))
@@ -93,6 +98,7 @@ func _run() -> void:
 				var reason := String(session.result.get("reason", "timeout"))
 				stats.reasons[reason] = stats.reasons.get(reason, 0) + 1
 				stats.violations += inv.violations.size()
+				stats.rescues += int(session.board.stats.rescues)
 				for v in inv.violations.slice(0, 3):
 					printerr("  İHLAL %s/%s: %s" % [lv.id, bot_name, v])
 				if session.result.get("won", false):
@@ -114,6 +120,11 @@ func _run() -> void:
 		report.levels.append(entry)
 
 	report.violations = total_violations
+	var total_rescues := 0
+	for e in report.levels:
+		for b in e.bots:
+			total_rescues += int(e.bots[b].rescues)
+	report.rescues = total_rescues
 	var out := ProjectSettings.globalize_path("res://").path_join(String(_opts.out))
 	DirAccess.make_dir_recursive_absolute(out.get_base_dir())
 	var f := FileAccess.open(out, FileAccess.WRITE)

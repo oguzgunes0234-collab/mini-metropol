@@ -7,8 +7,8 @@ Godot 4.7 + GDScript. Dikey ekran, 1080×1920 tasarım çözünürlüğü,
 
 ```
 scenes/main.tscn
-└── App (scripts/ui/app.gd)                Ekran geçişleri, bölüm kataloğu, oyuncu ilerlemesi
-    ├── LevelSelect (ui/level_select.gd)   Bölüm listesi: yıldızlar, kilitler, serbest oyun
+└── App (scripts/ui/app.gd)                Ekran geçişleri, katalog, oyuncu profili ve kaydı
+    ├── LevelMap (ui/level_map.gd)         Bölge haritası: bölümler, yıldızlar, kilitler, para
     └── GameScreen (game/game.gd)          Oyun ekranı: girdi, yerleşim, paneller, efektler
         ├── Board (board.gd)               Fizik dünyası: duvarlar, engeller, binalar, birleşme, tehlike
         │   ├── Walls (StaticBody2D)       Duvarlar + güvenlik tavanı + bölüm engelleri
@@ -25,7 +25,11 @@ scripts/core/   Ekrandan bağımsız, birim testli kurallar
     merge_resolver.gd  Hangi çiftler birleşir? (tek merkez, deterministik)
     spawn_queue.gd     Tohumlu bina sırası (+ öğretici sabit başlangıç), durum kaydı
     score_keeper.gd    Puan ve zincir bonusu
-    progress.gd        En iyi yıldız/puan, kilitler, başarısızlık sayacı (şimdilik bellekte)
+    progress.gd        En iyi yıldız/puan, tamamlanma, başarısızlık sayacı
+    wallet.gd          Madeni para ve elmas; negatif bakiye olmaz, işlem kaydı
+    economy_data.gd    Ekonomi ayarları (data/economy.json) ve doğrulaması
+    player_profile.gd  İlerleme + cüzdan + ayarlar; bölüm sonu ödülleri tek yerden
+    save_store.gd      Yerel kayıt: atomik yazma, yedek, sağlama, bozulmaya dayanıklı okuma
 
 scripts/ui/ui_kit.gd   Ortak arayüz parçaları (düğme, panel, yıldız, hedef rozeti)
 ```
@@ -53,9 +57,10 @@ PLAYING ──(son hamle)──> SETTLING ──(binalar durdu, hedef yok)──
 | SpawnController | `SpawnQueue` (sıra) + `Dropper` (nişan) | Var |
 | ScoreManager | `ScoreKeeper` | Var |
 | LevelManager | `LevelCatalog` (veri) + `LevelGoals` (hedef/yıldız) + `GameSession.start_level` | Var |
-| UIController | `App`, `LevelSelect`, `GameScreen`, `Hud`, `UiKit` | Var |
-| SaveManager | `Progress` (durum hazır, diske yazma yok) | Aşama 4 |
-| EconomyManager, BoosterManager | — | Aşama 5 |
+| UIController | `App`, `LevelMap`, `GameScreen`, `Hud`, `UiKit` | Var |
+| SaveManager | `SaveStore` + `PlayerProfile` | Var |
+| EconomyManager | `Wallet` + `EconomyData` + `PlayerProfile.apply_result` | Ödüller var; harcama Aşama 5 |
+| BoosterManager | — | Aşama 5 |
 | ShopController, PurchaseService | — | Aşama 8–9 |
 
 ## Birleşme akışı
@@ -88,9 +93,10 @@ alan rahatlar. `rule: "none"` yapılırsa birleşmezler (test edildi).
 
 - Toplam hız ve yukarı doğru hız sınırı (`max_speed`, `max_up_speed`).
 - Bırakma noktasının çok üstünde görünmez tavan; binalar alandan kaçamaz.
-- Fizik 120 Hz: ağır yığınlarda küçük binaların ezilmesini önler.
-- Kurtarma: duvara/zemine yarıçapının %30'undan fazla gömülen bina geri itilir
-  (`stats.rescues`). Sınır denetimi oyun bittikten sonra da çalışır.
+- Fizik 120 Hz, 32 çözücü yinelemesi, dengeli kütleler: ağır yığınlarda küçük
+  binaların ezilmesini önler (karar 3 ve 16).
+- Son çare kurtarma: merkezi duvar/zemin çizgisini geçen bina sınıra geri
+  konur (`stats.rescues`). Sınır denetimi oyun bittikten sonra da çalışır.
 - Yine de alan dışına çıkan bina olursa kaydedilir ve kaldırılır
   (`stats.out_of_bounds`); testler bu sayının 0 kaldığını doğrular.
 
@@ -119,3 +125,27 @@ Veri hatalıysa oyun başlamaz ve hatayı ekranda gösterir. Tüm alanlar
 `Board` içinde (0,0) arsanın sol üst köşesi, y aşağı doğru artar. Arsa
 varsayılan 900×1280; bölümler daraltıp alçaltabilir. İçerik 1920 yüksekliğe göre dizilir; daha uzun telefonlarda dikey,
 tabletlerde yatay ortalanır. Mobilde üst güvenli alan (çentik) payı bırakılır.
+
+## Kayıt
+
+`user://save.json` (Godot'nun kullanıcı klasörü; Mac'te
+`~/Library/Application Support/Godot/app_userdata/Mini Metropol/`).
+
+- **Ne kaydedilir:** bölüm ilerlemesi (en iyi yıldız/puan, tamamlanma,
+  başarısızlık sayacı), serbest oyun rekoru, cüzdan (bakiye + son 50 işlem),
+  ayarlar (ses, müzik, titreşim, hareket azaltma), alınmış yıldız ödülleri.
+- **Ne zaman:** ilk açılışta, her bölüm sonunda, uygulama arka plana alınınca
+  ve kapatılırken.
+- **Bozulmaya dayanıklılık:** önce `.tmp` dosyasına yazılır, eski kayıt `.bak`
+  olur, sonra `.tmp` yerine taşınır. Okurken sürüm ve SHA-256 sağlaması
+  denetlenir; asıl dosya bozuksa yedek, o da bozuksa temiz başlangıç.
+  Tek tek alanlar da doğrulanır (ör. yıldız 0–3, bakiye ≥ 0); bozuk alan
+  varsayılana döner. Oyun hiçbir kayıt durumunda çökmez (testli).
+- Ağ bağlantısı, hesap veya kişisel veri yoktur.
+
+## Bölgeler ve kilitler
+
+`data/regions.json`: Başlangıç Mahallesi, Sahil Bölgesi, Çarşı Bölgesi ve
+"Yakında" olarak görünen üç bölge. Bölüm açılması = bölgesi açık **ve** bir
+önceki bölüm tamamlanmış. Bölge açılması = belirtilen bölüm tamamlanmış **ve**
+toplam yıldız eşiği aşılmış (`LevelCatalog.is_region_unlocked`).

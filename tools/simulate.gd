@@ -44,6 +44,8 @@ func _run() -> void:
 	var board := Board.new()
 	world.add_child(board)
 	board.setup(data)
+	if _opts.has("iters"):
+		PhysicsServer2D.space_set_param(board.get_world_2d().space, PhysicsServer2D.SPACE_PARAM_SOLVER_ITERATIONS, int(_opts.iters))
 	var session := GameSession.new()
 	world.add_child(session)
 	session.setup(data, board)

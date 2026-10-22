@@ -17,8 +17,6 @@ enum Room { FREE, BLOCKED_TEMP, FULL }
 
 ## Bırakma noktasını engelleyen bina bu hızdan yavaşsa "yerleşmiş" sayılır.
 const SETTLED_SPEED := 160.0
-## Duvara/zemine yarıçapın bu oranından fazla gömülen bina geri itilir.
-const RESCUE_DEPTH := 0.3
 
 ## Yalnızca fizik deneyleri için (tools/simulate.gd --no_rescue).
 static var rescue_enabled := true
@@ -278,29 +276,29 @@ func _remove(b: Building) -> void:
 	b.queue_free()
 
 
-## Kurtarma: ağır bir yığının altında ezilen bina duvara/zemine yarıçapının
-## RESCUE_DEPTH katından fazla gömülürse alana geri itilir ve duvara doğru
-## hızı sıfırlanır. Godot'nun 2D fizik çözücüsü büyük kütle farkı olan
-## yığınlarda bunu nadiren yaşatıyor (bkz. docs/DECISIONS.md, karar 16);
-## bu düzeltme binanın kaybolmasını önler.
+## Kurtarma (son çare): ağır bir yığın binayı kayayla duvar arasına
+## sıkıştırıp duvarın içine iterse ve binanın merkezi duvar/zemin çizgisini
+## geçerse, bina sınıra geri konur ve duvara doğru hızı sıfırlanır. Bina
+## kaybolmaz. Daha erken (sığ gömülmede) müdahale etmek yığının içine
+## ışınlama yaptığı için döngü yaratıyordu (bkz. docs/DECISIONS.md, karar 16).
+## Normal oyunda çok nadirdir; doğrulama raporları sayısını gösterir.
 func _rescue_deep_penetrations() -> void:
 	if not rescue_enabled:
 		return
 	for b in buildings:
 		var r := b.current_radius()
-		var limit := r * (1.0 - RESCUE_DEPTH)
 		var p := b.position
 		var v := b.linear_velocity
 		var fixed := false
-		if p.x < limit:
+		if p.x < 0.0:
 			p.x = r
 			v.x = maxf(v.x, 0.0)
 			fixed = true
-		elif p.x > width - limit:
+		elif p.x > width:
 			p.x = width - r
 			v.x = minf(v.x, 0.0)
 			fixed = true
-		if p.y > height - limit:
+		if p.y > height:
 			p.y = height - r
 			v.y = minf(v.y, 0.0)
 			fixed = true

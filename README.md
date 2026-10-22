@@ -15,7 +15,8 @@ Godot 4 ile geliştiriliyor.
 3. Godot'yu aç → **Import** → açtığın klasördeki `project.godot` dosyasını seç
    → **Import & Edit**.
 4. Sağ üstteki **▶ (Run Project)** düğmesine bas (kısayol: `Cmd+B`).
-   Bölüm listesi açılır; ilk bölümden başla ya da **Serbest Oyun**'u seç.
+   Bölge haritası açılır; ilk bölümden başla ya da **Serbest Oyun**'u seç.
+   İlerleme otomatik kaydedilir.
 
 ### Kontroller
 
@@ -27,21 +28,21 @@ Godot 4 ile geliştiriliyor.
 | `F3` | Geliştirici göstergesi (FPS, bina sayısı, fizik süresi) |
 | `Esc` | Duraklat |
 | `B` | Bina şeklini değiştir: daire ↔ yuvarlatılmış kare (deneysel) |
-| `U` (bölüm listesinde) | Tüm bölümleri aç (geliştirici) |
+| `U` (haritada) | Tüm bölümleri aç (geliştirici, kaydedilmez) |
 
 ## Klasör yapısı
 
 | Klasör | İçerik |
 |---|---|
-| `data/` | Bina tanımları, oyun kuralları ve bölümler (JSON). Değerler buradan değiştirilir. |
+| `data/` | Binalar, kurallar, bölümler, bölgeler ve ekonomi (JSON). Değerler buradan değiştirilir. |
 | `scripts/core/` | Ekrandan bağımsız oyun kuralları (birleşme, puan, sıradaki bina). |
 | `scripts/game/` | Oyun ekranı: bina, oyun alanı, oturum, bırakıcı, arayüz. |
-| `scripts/ui/` | Uygulama kökü, bölüm listesi, ortak arayüz parçaları. |
+| `scripts/ui/` | Uygulama kökü, bölge haritası, ortak arayüz parçaları. |
 | `scenes/` | Godot sahneleri. |
 | `i18n/` | Türkçe ve İngilizce metinler. |
 | `tests/` | Otomatik testler, tutarlılık denetimi, test botu. |
 | `tools/` | Kurulum, test, simülasyon, lint ve ekran görüntüsü betikleri. |
-| `docs/` | [Mimari](docs/ARCHITECTURE.md), [bölümler](docs/LEVELS.md), [kararlar](docs/DECISIONS.md), [testler](docs/TESTING.md), [görsel lisansları](docs/ASSETS.md). |
+| `docs/` | [Mimari](docs/ARCHITECTURE.md), [bölümler](docs/LEVELS.md), [ekonomi](docs/ECONOMY.md), [kararlar](docs/DECISIONS.md), [testler](docs/TESTING.md), [görsel lisansları](docs/ASSETS.md). |
 
 ## Geliştirici komutları (Linux)
 
@@ -53,3 +54,8 @@ tools/validate_levels.sh  # bölümleri botlarla doğrula
 tools/lint.sh           # GDScript denetimi
 tools/screenshots.sh    # ekran görüntüleri
 ```
+
+### İlerlemeyi sıfırlama (geliştirici)
+
+Kayıt dosyası: `~/Library/Application Support/Godot/app_userdata/Mini Metropol/save.json`
+(Mac). Silinirse oyun temiz başlar.

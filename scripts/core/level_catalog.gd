@@ -8,8 +8,12 @@ extends RefCounted
 ##   id, name_key, hint_key, region, difficulty (1-5), mechanic,
 ##   [unlock.after], seed, moves, goals[], stars[3], rewards,
 ##   [spawn_sequence], [rules], [layout], [obstacles]
+##
+## Bölgeler (data/regions.json): her bölüm bir bölgeye aittir. Bir bölge,
+## unlock.after_level tamamlanınca ve toplam yıldız unlock.stars'a ulaşınca açılır.
 
 const LEVELS_PATH := "res://data/levels.json"
+const REGIONS_PATH := "res://data/regions.json"
 ## Başlangıç binaları ve engeller tehlike çizgisine bu kadar yaklaşamaz.
 const LAYOUT_TOP_MARGIN := 60.0
 ## Engellerin üstü en az bu derinlikte olmalı (bırakma alanı açık kalsın).
@@ -20,9 +24,12 @@ static var _default: LevelCatalog
 
 var base: GameData
 var levels: Array[Dictionary] = []
+## Bölgeler, haritadaki sırayla. Boşsa bölge kuralı uygulanmaz (testler için).
+var regions: Array[Dictionary] = []
 var errors: PackedStringArray = []
 var _index := {}
 var _data := {}
+var _region_index := {}
 
 
 static func load_default() -> LevelCatalog:
@@ -31,30 +38,41 @@ static func load_default() -> LevelCatalog:
 	return _default
 
 
-static func load_from_file(path: String, p_base: GameData) -> LevelCatalog:
-	var text := FileAccess.get_file_as_string(path) if FileAccess.file_exists(path) else ""
-	var parsed = JSON.parse_string(text) if text != "" else null
-	if typeof(parsed) != TYPE_DICTIONARY:
+## regions_path boşsa bölge kuralları uygulanmaz (tasarım denemeleri için).
+static func load_from_file(path: String, p_base: GameData, regions_path: String = REGIONS_PATH) -> LevelCatalog:
+	var parsed = _read_json(path)
+	var parsed_regions = _read_json(regions_path) if regions_path != "" else {}
+	if typeof(parsed) != TYPE_DICTIONARY or typeof(parsed_regions) != TYPE_DICTIONARY:
 		var c := LevelCatalog.new()
 		c.base = p_base
-		c.errors.append("%s okunamadı veya geçerli bir JSON nesnesi değil" % path)
+		c.errors.append("%s veya %s okunamadı ya da geçerli bir JSON nesnesi değil" % [path, regions_path])
 		return c
-	return from_dict(parsed, p_base)
+	return from_dict(parsed, p_base, parsed_regions)
 
 
-static func from_dict(d: Dictionary, p_base: GameData) -> LevelCatalog:
+static func from_dict(d: Dictionary, p_base: GameData, regions_dict: Dictionary = {}) -> LevelCatalog:
 	var c := LevelCatalog.new()
 	c.base = p_base
 	if not p_base.is_valid():
 		c.errors.append("Temel oyun verisi geçersiz")
 		return c
+	if not regions_dict.is_empty():
+		c._parse_regions(regions_dict)
 	var list = d.get("levels")
 	if typeof(list) != TYPE_ARRAY or list.is_empty():
 		c.errors.append("levels: boş olmayan bir liste olmalı")
 		return c
 	for i in list.size():
 		c._add_level(i, list[i])
+	c._check_region_links()
 	return c
+
+
+static func _read_json(path: String) -> Variant:
+	if not FileAccess.file_exists(path):
+		return null
+	var json := JSON.new()
+	return json.data if json.parse(FileAccess.get_file_as_string(path)) == OK else null
 
 
 func is_valid() -> bool:
@@ -82,6 +100,85 @@ func next_id(id: String) -> String:
 ## Bölümün kullanacağı oyun verisi (genel kurallar + bölümün geçersiz kıldıkları).
 func data_for(level: Dictionary) -> GameData:
 	return _data[level.id]
+
+
+func region(id: String) -> Dictionary:
+	return regions[_region_index[id]] if _region_index.has(id) else {}
+
+
+func levels_in_region(id: String) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for lv in levels:
+		if lv.region == id:
+			out.append(lv)
+	return out
+
+
+func is_region_unlocked(r: Dictionary, progress: Progress) -> bool:
+	if r.coming_soon:
+		return false
+	if progress.unlock_all:
+		return true
+	return (r.unlock_after == "" or progress.is_completed(r.unlock_after)) and progress.total_stars() >= r.unlock_stars
+
+
+## Bölüm oynanabilir mi? Bölgesi açık olmalı ve bir önceki bölüm tamamlanmış olmalı.
+func is_unlocked(level: Dictionary, progress: Progress) -> bool:
+	if progress.unlock_all:
+		return true
+	if not regions.is_empty() and not is_region_unlocked(region(level.region), progress):
+		return false
+	return level.unlock_after == "" or progress.is_completed(level.unlock_after)
+
+
+func _parse_regions(d: Dictionary) -> void:
+	var list = d.get("regions")
+	if typeof(list) != TYPE_ARRAY or list.is_empty():
+		errors.append("regions: boş olmayan bir liste olmalı")
+		return
+	for i in list.size():
+		var raw = list[i]
+		var where := "regions[%d]" % i
+		if typeof(raw) != TYPE_DICTIONARY:
+			errors.append("%s bir nesne olmalı" % where)
+			continue
+		var e := errors.size()
+		var id := _str(raw, "id", where)
+		var unlock = raw.get("unlock", {})
+		if typeof(unlock) != TYPE_DICTIONARY:
+			unlock = {}
+		var r := {
+			"id": id,
+			"name_key": _str(raw, "name_key", where),
+			"color": Color.html(raw.color) if typeof(raw.get("color")) == TYPE_STRING and Color.html_is_valid(raw.color) else Color.WHITE,
+			"accent": Color.html(raw.accent) if typeof(raw.get("accent")) == TYPE_STRING and Color.html_is_valid(raw.accent) else Color.WHITE,
+			"unlock_after": String(unlock.after_level) if unlock.get("after_level") != null else "",
+			"unlock_stars": _int(unlock, "stars", where + " unlock", 0, 10000),
+			"coming_soon": raw.get("coming_soon") == true,
+		}
+		for key in ["color", "accent"]:
+			if typeof(raw.get(key)) != TYPE_STRING or not Color.html_is_valid(raw[key]):
+				errors.append("%s: %s geçerli bir renk olmalı" % [where, key])
+		if _region_index.has(id):
+			errors.append("%s: bölge kimliği tekrar kullanılmış" % where)
+		if errors.size() == e:
+			_region_index[id] = regions.size()
+			regions.append(r)
+
+
+## Bölüm ↔ bölge bağlantılarını denetler (bölümler okunduktan sonra).
+func _check_region_links() -> void:
+	if regions.is_empty():
+		return
+	for r in regions:
+		if r.unlock_after != "" and not _index.has(r.unlock_after):
+			errors.append("bölge %s: unlock.after_level '%s' tanımlı bir bölüm değil" % [r.id, r.unlock_after])
+	for lv in levels:
+		var r := region(lv.region)
+		if r.is_empty():
+			errors.append("bölüm %s: '%s' tanımlı bir bölge değil" % [lv.id, lv.region])
+		elif r.coming_soon:
+			errors.append("bölüm %s: '%s' bölgesi henüz açılmadı (coming_soon)" % [lv.id, lv.region])
 
 
 func _add_level(i: int, raw: Variant) -> void:

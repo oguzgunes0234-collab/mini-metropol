@@ -207,7 +207,8 @@ func show_pause(level: Dictionary) -> void:
 
 
 ## Bölüm/oyun sonucu. tip: art arda başarısızlıktan sonra gösterilecek ipucu ("" ise yok).
-func show_result(result: Dictionary, level: Dictionary, has_next: bool, best_score: int, tip: String) -> void:
+## rewards: PlayerProfile.apply_result dönüşü (ödül satırları).
+func show_result(result: Dictionary, level: Dictionary, has_next: bool, best_score: int, tip: String, rewards: Dictionary = {}) -> void:
 	var box: VBoxContainer = _result[1]
 	UiKit.clear(box)
 	var title: String
@@ -231,6 +232,8 @@ func show_result(result: Dictionary, level: Dictionary, has_next: bool, best_sco
 	box.add_child(UiKit.label(tr("GAMEOVER_SCORE") % result.score, 40, UiKit.INK, HORIZONTAL_ALIGNMENT_CENTER))
 	if level.is_empty():
 		box.add_child(UiKit.label(tr("GAMEOVER_BEST") % best_score, 32, UiKit.INK_SOFT, HORIZONTAL_ALIGNMENT_CENTER))
+	for line in rewards.get("lines", []):
+		box.add_child(_reward_line(line))
 	if tip != "":
 		var tip_label := UiKit.label("%s: %s" % [tr("TIP_TITLE"), tip], 32, UiKit.INK_SOFT)
 		tip_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -273,6 +276,24 @@ func set_debug_text(text: String) -> void:
 func _show(p: Array) -> void:
 	hide_panels()
 	p[0].visible = true
+
+
+func _reward_line(line: Dictionary) -> Control:
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 14)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var text := tr(line.key)
+	if line.key == "REWARD_NEW_STARS" or line.key == "REWARD_MILESTONE":
+		text = text % int(line.value)
+	var l := UiKit.label(text, 32, UiKit.INK_SOFT)
+	l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(l)
+	row.add_child(UiKit.CoinIcon.new(22))
+	var amount := UiKit.label("+%d" % int(line.coins), 34, UiKit.GOOD)
+	amount.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(amount)
+	return row
 
 
 func _star_line(text: String, filled: bool) -> Control:

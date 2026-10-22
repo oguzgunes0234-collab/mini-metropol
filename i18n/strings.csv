@@ -39,6 +39,19 @@ UI_GOALS,HEDEFLER,GOALS
 UI_STARS,YILDIZLAR,STARS
 UI_UNLOCK_ALL,Tüm bölümler açıldı (geliştirici),All levels unlocked (developer)
 REGION_STARTER,Başlangıç Mahallesi,Starter District
+REGION_COAST,Sahil Bölgesi,Coastal District
+REGION_COMMERCE,Çarşı Bölgesi,Market District
+REGION_GREEN,Yeşil Yaşam Bölgesi,Green Living District
+REGION_TECH,Teknoloji Bölgesi,Tech District
+REGION_METRO,Büyük Metropol,Grand Metropolis
+UI_COMING_SOON,Yakında,Coming soon
+UI_REGION_STARS,%d / %d yıldız,%d / %d stars
+UI_REQ_LEVEL,Önce %s bölümünü tamamla,Finish level %s first
+UI_REQ_STARS,%d yıldız gerekli (şu an %d),%d stars needed (you have %d)
+REWARD_FIRST,İlk tamamlama,First clear
+REWARD_REPEAT,Tekrar oynama,Replay
+REWARD_NEW_STARS,Yeni yıldız ×%d,New stars ×%d
+REWARD_MILESTONE,%d yıldız ödülü,%d-star milestone
 GOAL_BUILD,%s üret,Build %s
 GOAL_SCORE,%d puana ulaş,Reach %d points
 GOAL_CHAIN,x%d zincir yap,Make a x%d chain
@@ -75,3 +88,43 @@ HINT_1_07,"Kayalar yer kaplar ve binaları saptırır; arsa da alçak. Büyük b
 HINT_1_08,"Arsa dar ve iki apartman lazım. Birini bir kenarda tamamla, ikincisini öbür yanda kur.","The lot is narrow and you need two apartments. Finish one on one side, build the second on the other."
 HINT_1_09,"Arsa hem dar hem alçak. Ofis Binası kurarken en az bir kez zincir yap: aynı binayı, birleşince oluşacak binanın komşusuna bırak.","The lot is narrow and low. Build an Office and make at least one chain: drop onto a pair whose result will touch its twin."
 HINT_1_10,"Ticaret Merkezi için iki Ofis Binası gerekir. Arsa dar: büyük binaları bir kenarda topla, küçükleri öbür yanda birleştir.","A Shopping Center needs two Office Buildings. The lot is narrow: keep big buildings on one side and merge small ones on the other."
+LEVEL_2_01,Kumsal Evleri,Beach Houses
+LEVEL_2_02,Dalgakıran,Breakwater
+LEVEL_2_03,Sahil Yolu,Coast Road
+LEVEL_2_04,Kayalık Koy,Rocky Cove
+LEVEL_2_05,Tatil Köyü,Holiday Village
+LEVEL_2_06,Yaz Şenliği,Summer Festival
+LEVEL_2_07,Fener Tepesi,Lighthouse Hill
+LEVEL_2_08,Balıkçı Limanı,Fishing Harbor
+LEVEL_2_09,Sahil Şeridi,Shoreline
+LEVEL_2_10,Sahil Sarayı,Seaside Palace
+LEVEL_3_01,Pazar Yeri,Marketplace
+LEVEL_3_02,İki Sokak,Two Streets
+LEVEL_3_03,Dükkân Sırası,Shop Row
+LEVEL_3_04,Kalabalık Çarşı,Busy Bazaar
+LEVEL_3_05,Eğik Rampa,Sloped Ramp
+LEVEL_3_06,Zincir Ustası,Chain Master
+LEVEL_3_07,Dar Pasaj,Narrow Arcade
+LEVEL_3_08,Çifte Ofis,Twin Offices
+LEVEL_3_09,Büyük Pazar,Grand Market
+LEVEL_3_10,Çarşı Kulesi,Market Tower
+HINT_2_01,"Kenardaki evleri büyüterek başla: aynı binayı onların üstüne bırak.","Start by growing the houses at the edges: drop matching buildings on them."
+HINT_2_02,"Alçak kayalar binaları yana iter. Kayaların arasındaki çukurları kullan.","Low rocks push buildings aside. Use the dips between them."
+HINT_2_03,"Dar yolda zincir kurmak için aynı binaları üst üste diz.","On the narrow road, stack matching buildings to set up a chain."
+HINT_2_04,"Kayalar yukarıda; altlarındaki boşlukları erken doldurma.","The rocks sit high; don't fill the space beneath them too early."
+HINT_2_05,"Hazır binalar farklı seviyelerde. Önce en büyüğünü büyüt.","The starting buildings differ in size. Grow the biggest first."
+HINT_2_06,"Zincirler bonus puan verir; büyük birleşmeler en çok puanı getirir.","Chains give bonus points; big merges score the most."
+HINT_2_07,"Sağdaki yamaç binaları ortaya yuvarlar. Büyükleri sola yerleştir, yamacı küçükler için kullan.","The slope on the right rolls buildings to the middle. Keep big ones on the left and use the slope for small ones."
+HINT_2_08,"Dört hedef var: iki Apartman ve iki Dükkân. Dükkânları erken bitir.","Four goals: two Apartments and two Shops. Finish the Shops early."
+HINT_2_09,"Ortadaki Dükkân yükselmek için iyi bir temel. Kayaların arasını kullan.","The Shop in the middle is a good base. Use the gap between the rocks."
+HINT_2_10,"Ticaret Merkezi için iki Ofis gerekir. Sabırlı ol, alanı düzenli tut.","A Shopping Center needs two Offices. Be patient and keep the lot tidy."
+HINT_3_01,"Bariyer ortayı ikiye böler. Büyükleri bariyerin bir yanında topla.","The barrier splits the middle. Gather big buildings on one side."
+HINT_3_02,"Alttaki duvar arsayı iki sokağa böler: her sokakta bir Apartman kur.","The low wall makes two streets: build one Apartment on each side."
+HINT_3_03,"Dört Dükkân lazım. Küçük binaları boşa harcama.","You need four Shops. Don't waste small buildings."
+HINT_3_04,"Alan dolu başlıyor. Önce eşleşenleri temizle, sonra büyüt.","The lot starts crowded. Clear the matches first, then grow."
+HINT_3_05,"Rampa binaları sola kaydırır. Bırakırken bunu hesaba kat.","The ramp rolls buildings to the left. Plan your drops for it."
+HINT_3_06,"Üçlü zincir için: birleşince oluşacak bina, ikizinin hemen yanına düşmeli.","For a triple chain, the merged building must land right next to its twin."
+HINT_3_07,"En dar arsa! Her bırakışı dikkatle seç.","The narrowest lot yet! Choose every drop carefully."
+HINT_3_08,"İki Ofis Binası lazım. İlkini bir kenarda tamamla.","You need two Office Buildings. Finish the first on one side."
+HINT_3_09,"Daha büyük binalar da düşer. Eğik bariyerin altındaki boşluğu kullan.","Bigger buildings drop too. Use the space under the tilted barrier."
+HINT_3_10,"Bölgenin finali: bir Gökdelen kur. Alanı düzenli tutmak her şeydir.","The district finale: build a Skyscraper. Keeping the lot tidy is everything."

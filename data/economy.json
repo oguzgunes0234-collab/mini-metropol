@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "_note": "Ekonomi değerleri. Tümü BAŞLANGIÇ VARSAYIMIDIR: gerçek oyuncu verisi olmadan dengeli olduğu iddia edilmez. Bölüm ödülleri data/levels.json içindedir (rewards).",
+  "start": { "coins": 100, "diamonds": 0 },
+  "coins_per_new_star": 10,
+  "star_milestones": [
+    { "stars": 10, "coins": 50 },
+    { "stars": 20, "coins": 100 },
+    { "stars": 30, "coins": 150 },
+    { "stars": 45, "coins": 250 },
+    { "stars": 60, "coins": 400 },
+    { "stars": 75, "coins": 600 },
+    { "stars": 90, "coins": 1000 }
+  ]
+}

@@ -19,14 +19,14 @@ func test_best_result_is_kept() -> void:
 func test_unlocking_follows_completion() -> void:
 	var cat := LevelCatalog.load_default()
 	var p := Progress.new()
-	assert_true(p.is_unlocked(cat.levels[0]))
-	assert_false(p.is_unlocked(cat.levels[1]))
+	assert_true(cat.is_unlocked(cat.levels[0], p))
+	assert_false(cat.is_unlocked(cat.levels[1], p))
 	p.record(_result(cat.levels[0].id, false, 0, 10))
-	assert_false(p.is_unlocked(cat.levels[1]), "kaybetmek açmaz")
+	assert_false(cat.is_unlocked(cat.levels[1], p), "kaybetmek açmaz")
 	p.record(_result(cat.levels[0].id, true, 1, 10))
-	assert_true(p.is_unlocked(cat.levels[1]))
+	assert_true(cat.is_unlocked(cat.levels[1], p))
 	p.unlock_all = true
-	assert_true(p.is_unlocked(cat.levels[cat.count() - 1]))
+	assert_true(cat.is_unlocked(cat.levels[cat.count() - 1], p))
 
 
 func test_fail_counter_resets_on_win() -> void:

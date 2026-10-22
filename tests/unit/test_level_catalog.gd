@@ -113,3 +113,67 @@ func test_bad_spawn_sequence_is_reported() -> void:
 	var d := _levels_dict()
 	d.levels[0].spawn_sequence = [1, 9]
 	assert_false(_catalog(d).is_valid())
+
+
+func _regions_dict() -> Dictionary:
+	return JSON.parse_string(FileAccess.get_file_as_string(LevelCatalog.REGIONS_PATH))
+
+
+func test_default_regions_are_valid_and_linked() -> void:
+	var c := LevelCatalog.load_default()
+	assert_true(c.regions.size() >= 3)
+	for r in c.regions:
+		if not r.coming_soon:
+			assert_true(c.levels_in_region(r.id).size() > 0, "%s bölgesinde bölüm olmalı" % r.id)
+		for loc in ["tr", "en"]:
+			TranslationServer.set_locale(loc)
+			assert_ne(tr(r.name_key), r.name_key, "%s için %s çevirisi yok" % [r.name_key, loc])
+	TranslationServer.set_locale("en")
+
+
+func test_region_unlock_needs_level_and_stars() -> void:
+	var c := LevelCatalog.load_default()
+	var coast := c.region("coast")
+	var p := Progress.new()
+	assert_false(c.is_region_unlocked(coast, p))
+	# Bölge 1'in son bölümü tamamlandı ama yıldız yetersiz
+	p.record({"level_id": coast.unlock_after, "won": true, "stars": 1, "score": 0})
+	assert_eq(p.total_stars() < coast.unlock_stars, true)
+	assert_false(c.is_region_unlocked(coast, p), "yıldız yetmezse kilitli kalır")
+	assert_false(c.is_unlocked(c.levels_in_region("coast")[0], p))
+	# Yeterli yıldız
+	for lv in c.levels_in_region("starter"):
+		p.record({"level_id": lv.id, "won": true, "stars": 2, "score": 0})
+	assert_true(c.is_region_unlocked(coast, p))
+	assert_true(c.is_unlocked(c.levels_in_region("coast")[0], p))
+	assert_false(c.is_unlocked(c.levels_in_region("coast")[1], p), "bölge içinde sıra korunur")
+
+
+func test_coming_soon_region_never_unlocks() -> void:
+	var c := LevelCatalog.load_default()
+	var p := Progress.new()
+	p.unlock_all = true
+	for r in c.regions:
+		if r.coming_soon:
+			assert_false(c.is_region_unlocked(r, p))
+
+
+func test_level_with_unknown_region_is_reported() -> void:
+	var d := _levels_dict()
+	d.levels[0].region = "atlantis"
+	var c := LevelCatalog.from_dict(d, GameData.load_default(), _regions_dict())
+	assert_true("\n".join(c.errors).contains("atlantis"))
+
+
+func test_region_with_unknown_unlock_level_is_reported() -> void:
+	var r := _regions_dict()
+	r.regions[1].unlock.after_level = "9-99"
+	var c := LevelCatalog.from_dict(_levels_dict(), GameData.load_default(), r)
+	assert_true("\n".join(c.errors).contains("9-99"))
+
+
+func test_level_in_coming_soon_region_is_reported() -> void:
+	var d := _levels_dict()
+	d.levels[0].region = "green"
+	var c := LevelCatalog.from_dict(d, GameData.load_default(), _regions_dict())
+	assert_true("\n".join(c.errors).contains("coming_soon"))

@@ -42,7 +42,7 @@ köşede ezilen kulübe hâlâ zemine gömülüyordu. Aynı bölümde 40 denemel
 | **Dengeli (1 → 5)** | **açık** | **0** |
 | Dengeli | kapalı | 0 |
 
-Son karar: **120 Hz + dengeli kütleler + kurtarma (yedek)**. Kazanma
+Son karar (karar 16 ile birlikte): **120 Hz + dengeli kütleler + 32 çözücü yinelemesi + son çare kurtarma**. Kazanma
 oranları değişmedi. Bedeli: işlemci yükü ~2,5 kat (sunucuda saniyede ~30 ms).
 **Telefonda ölçülmedi.** Düşük güçlü cihazlarda sorun çıkarsa 60 Hz + dengeli
 kütleler denenecek (60 Hz'de 3000 bırakmada 0 ihlal, 24 kurtarma).
@@ -111,24 +111,44 @@ Hedefler tamamlandığı anda bölüm kazanılır. Son hamleden sonra binalar
 durana kadar beklenir; bu sırada oluşan birleşmeler de sayılır (oyuncunun
 son hamlesi "boşa" gitmez).
 
-## 14. İlerleme şimdilik bellekte
-Bölüm kilitleri ve yıldızlar oturum boyunca tutulur, uygulama kapanınca
-sıfırlanır. Kalıcı kayıt (bozuk dosyaya dayanıklı) Aşama 4'te eklenecek;
-durum yapısı (`Progress.get_state/set_state`) buna hazır ve JSON testi var.
+## 14. Kalıcı kayıt: tek dosya, atomik yazma, yedek, sağlama (Aşama 4)
+Aşama 3'te ilerleme bellekteydi. Aşama 4'te `SaveStore` eklendi: tek JSON
+dosyası, önce geçici dosyaya yazıp yerine taşıma, bir önceki kaydı yedek
+tutma, SHA-256 sağlaması. Veri, JSON metni olarak saklanıp sağlaması bu metin
+üzerinden alınır (sayı biçimi değişip yanlış "bozuk" alarmı olmasın diye).
+Bulut kayıt ve hesap yok; gerekirse ayrı bir teknik öneriyle eklenecek.
 
 ## 15. Başarısızlık sonrası yalnızca ipucu
 Art arda 2. başarısızlıktan itibaren sonuç ekranında strateji ipucu çıkar.
 Satın alma, reklam veya "ek hamle al" önerisi gösterilmez.
 
-## 16. Ezilen binayı kurtarma, sınır denetimi hep açık
-Bölüm doğrulamasında (1-07, alçak arsa + kayalar) ağır yığının altındaki bir
-kulübe zemine itilip alanın dışına çıktı ve güvenlik ağı onu kaldırdı:
-oyuncunun binası kayboldu. İki değişiklik:
-- Duvara/zemine yarıçapının %30'undan fazla gömülen bina her fizik adımında
-  alana geri itilir, duvara doğru hızı sıfırlanır (`Board._rescue_deep_penetrations`,
-  `stats.rescues` ile sayılır). Bina kaybolmaz; nadiren küçük bir sıçrama görülebilir.
-- Sınır denetimi oyun bittikten sonra da çalışır (önceden duruyordu; sonuç
-  ekranının arkasında binalar alandan düşebiliyordu).
-Kalıcı çözüm adayı: Rapier 2D fizik eklentisi (yığınlarda daha kararlı).
-Ancak mobil derleme karmaşıklığı nedeniyle ancak gerçek cihaz testinde sorun
-görülürse değerlendirilecek.
+## 16. Ezilen binalar: kök neden kama etkisi; son çare kurtarma
+Bölüm doğrulamasında kayalı bölümlerde (1-07, 2-09) ağır yığının altında
+kalan küçük bir bina kaya ile duvar arasına sıkışıp duvarın/zeminin içine
+itildi ve güvenlik ağı onu kaldırdı: oyuncunun binası kayboldu.
+
+Denenenler (bölüm başına 30–60 deneme):
+1. Sığ gömülmede (yarıçapın %30'u) binayı geri ışınlamak → **zararlı**: bina
+   yığının içine ışınlanıyor, çözücü onu tekrar duvara itiyor; döngü ve daha
+   fazla ihlal (2-09: 58 ihlal, kazanma oranı da düştü).
+2. 120 Hz + dengeli kütleler (karar 3) → serbest oyunda sorunu çözdü, kayalı
+   bölümlerde nadiren sürdü.
+3. Çözücü yinelemesi (kurtarma kapalı): 16 → 2-09'da 4 ihlal; **32 → 2-09 ve
+   1-07'de 0**; 48 → 1-07'de 6 (rastlantısal). Maliyet 16'ya göre ~%19.
+
+Son karar: **120 Hz + dengeli kütleler + 32 çözücü yinelemesi**; kurtarma
+yalnızca son çare: binanın merkezi duvar/zemin çizgisini geçerse sınıra geri
+konur (kaybolmaz) ve `stats.rescues` ile sayılır. Sınır denetimi oyun bittikten
+sonra da çalışır. Doğrulama raporu bu sayıyı ayrıca gösterir.
+Kalıcı çözüm adayı: Rapier 2D fizik eklentisi (yığınlarda daha kararlı);
+yalnızca gerçek cihaz testinde sorun görülürse değerlendirilecek.
+
+## 17. Ödüller tek yerden, tekrar oynama ödülü küçük
+`PlayerProfile.apply_result` ilerlemeyi kaydeder, ödülü hesaplar ve cüzdana
+ekler; ekranlar yalnızca sonucu gösterir. Tekrar tamamlama ödülü (5–10) ilk
+tamamlamaya (20–120) göre küçük tutuldu: ilerleme için aynı bölümü tekrar
+tekrar oynamak gerekmemeli. Ayrıntı: [ECONOMY.md](ECONOMY.md).
+
+## 18. Bölge adı çakışması
+3. bölgenin adı başta "Ticaret Merkezi" olacaktı; bu, 7. seviye bina
+"Ticaret Merkezi" ile karışacağı için "Çarşı Bölgesi" yapıldı.

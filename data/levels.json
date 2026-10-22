@@ -222,6 +222,479 @@
       ],
       "rewards": {"coins_first": 60, "coins_repeat": 10},
       "rules": {"board": {"width": 760}, "drop": {"spawn_levels": [1, 2, 3, 4], "spawn_weights": [40, 30, 20, 10]}}
+    },
+    {
+      "id": "2-01",
+      "name_key": "LEVEL_2_01",
+      "hint_key": "HINT_2_01",
+      "region": "coast",
+      "difficulty": 2,
+      "mechanic": "layout",
+      "unlock": {"after": "1-10"},
+      "seed": 201,
+      "moves": 16,
+      "goals": [
+        {"type": "build", "level": 5, "count": 1}
+      ],
+      "stars": [
+        {"type": "complete"},
+        {"type": "moves_used_max", "value": 12},
+        {"type": "score", "value": 450}
+      ],
+      "rewards": {"coins_first": 40, "coins_repeat": 5},
+      "rules": {"drop": {"spawn_levels": [1, 2, 3], "spawn_weights": [45, 35, 20]}},
+      "layout": [
+        {"level": 3, "x": 100, "y": 1198},
+        {"level": 3, "x": 800, "y": 1198}
+      ]
+    },
+    {
+      "id": "2-02",
+      "name_key": "LEVEL_2_02",
+      "hint_key": "HINT_2_02",
+      "region": "coast",
+      "difficulty": 2,
+      "mechanic": "obstacle_low",
+      "unlock": {"after": "2-01"},
+      "seed": 202,
+      "moves": 19,
+      "goals": [
+        {"type": "build", "level": 4, "count": 2}
+      ],
+      "stars": [
+        {"type": "complete"},
+        {"type": "moves_used_max", "value": 15},
+        {"type": "score", "value": 300}
+      ],
+      "rewards": {"coins_first": 40, "coins_repeat": 5},
+      "rules": {"drop": {"spawn_levels": [1, 2, 3], "spawn_weights": [45, 35, 20]}},
+      "obstacles": [
+        {"shape": "circle", "kind": "rock", "x": 200, "y": 1180, "r": 50},
+        {"shape": "circle", "kind": "rock", "x": 450, "y": 1200, "r": 45},
+        {"shape": "circle", "kind": "rock", "x": 700, "y": 1180, "r": 50}
+      ]
+    },
+    {
+      "id": "2-03",
+      "name_key": "LEVEL_2_03",
+      "hint_key": "HINT_2_03",
+      "region": "coast",
+      "difficulty": 3,
+      "mechanic": "narrow_chain",
+      "unlock": {"after": "2-02"},
+      "seed": 203,
+      "moves": 13,
+      "goals": [
+        {"type": "build", "level": 5, "count": 1},
+        {"type": "chain", "value": 2}
+      ],
+      "stars": [
+        {"type": "complete"},
+        {"type": "moves_used_max", "value": 10},
+        {"type": "score", "value": 300}
+      ],
+      "rewards": {"coins_first": 45, "coins_repeat": 5},
+      "rules": {"board": {"width": 680}, "drop": {"spawn_levels": [1, 2, 3, 4], "spawn_weights": [40, 30, 20, 10]}}
+    },
+    {
+      "id": "2-04",
+      "name_key": "LEVEL_2_04",
+      "hint_key": "HINT_2_04",
+      "region": "coast",
+      "difficulty": 3,
+      "mechanic": "obstacle",
+      "unlock": {"after": "2-03"},
+      "seed": 204,
+      "moves": 44,
+      "goals": [
+        {"type": "build", "level": 6, "count": 1}
+      ],
+      "stars": [
+        {"type": "complete"},
+        {"type": "moves_used_max", "value": 32},
+        {"type": "score", "value": 1450}
+      ],
+      "rewards": {"coins_first": 45, "coins_repeat": 5},
+      "rules": {"board": {"height": 1050}, "drop": {"spawn_levels": [1, 2, 3, 4], "spawn_weights": [40, 30, 20, 10]}},
+      "obstacles": [
+        {"shape": "circle", "kind": "rock", "x": 230, "y": 650, "r": 60},
+        {"shape": "circle", "kind": "rock", "x": 670, "y": 650, "r": 60}
+      ]
+    },
+    {
+      "id": "2-05",
+      "name_key": "LEVEL_2_05",
+      "hint_key": "HINT_2_05",
+      "region": "coast",
+      "difficulty": 3,
+      "mechanic": "layout",
+      "unlock": {"after": "2-04"},
+      "seed": 205,
+      "moves": 12,
+      "goals": [
+        {"type": "build", "level": 6, "count": 1}
+      ],
+      "stars": [
+        {"type": "complete"},
+        {"type": "moves_used_max", "value": 10},
+        {"type": "score", "value": 750}
+      ],
+      "rewards": {"coins_first": 50, "coins_repeat": 5},
+      "rules": {"board": {"width": 800}, "drop": {"spawn_levels": [1, 2, 3, 4], "spawn_weights": [40, 30, 20, 10]}},
+      "layout": [
+        {"level": 4, "x": 110, "y": 1178},
+        {"level": 3, "x": 560, "y": 1198},
+        {"level": 2, "x": 730, "y": 1215}
+      ]
+    },
+    {
+      "id": "2-06",
+      "name_key": "LEVEL_2_06",
+      "hint_key": "HINT_2_06",
+      "region": "coast",
+      "difficulty": 3,
+      "mechanic": "score",
+      "unlock": {"after": "2-05"},
+      "seed": 206,
+      "moves": 36,
+      "goals": [
+        {"type": "score", "value": 1500}
+      ],
+      "stars": [
+        {"type": "complete"},
+        {"type": "moves_used_max", "value": 33},
+        {"type": "score", "value": 1800}
+      ],
+      "rewards": {"coins_first": 50, "coins_repeat": 5},
+      "rules": {"drop": {"spawn_levels": [1, 2, 3, 4], "spawn_weights": [40, 30, 20, 10]}}
+    },
+    {
+      "id": "2-07",
+      "name_key": "LEVEL_2_07",
+      "hint_key": "HINT_2_07",
+      "region": "coast",
+      "difficulty": 4,
+      "mechanic": "slope",
+      "unlock": {"after": "2-06"},
+      "seed": 207,
+      "moves": 22,
+      "goals": [
+        {"type": "build", "level": 6, "count": 1}
+      ],
+      "stars": [
+        {"type": "complete"},
+        {"type": "moves_used_max", "value": 18},
+        {"type": "score", "value": 900}
+      ],
+      "rewards": {"coins_first": 55, "coins_repeat": 5},
+      "rules": {"drop": {"spawn_levels": [1, 2, 3, 4], "spawn_weights": [40, 30, 20, 10]}},
+      "obstacles": [
+        {"shape": "rect", "kind": "barrier", "x": 700, "y": 1150, "w": 420, "h": 40, "rot": -25}
+      ]
+    },
+    {
+      "id": "2-08",
+      "name_key": "LEVEL_2_08",
+      "hint_key": "HINT_2_08",
+      "region": "coast",
+      "difficulty": 4,
+      "mechanic": "multi",
+      "unlock": {"after": "2-07"},
+      "seed": 208,
+      "moves": 18,
+      "goals": [
+        {"type": "build", "level": 5, "count": 2},
+        {"type": "build", "level": 4, "count": 2}
+      ],
+      "stars": [
+        {"type": "complete"},
+        {"type": "moves_used_max", "value": 15},
+        {"type": "score", "value": 560}
+      ],
+      "rewards": {"coins_first": 55, "coins_repeat": 5},
+      "rules": {"board": {"width": 760}, "drop": {"spawn_levels": [1, 2, 3, 4], "spawn_weights": [40, 30, 20, 10]}}
+    },
+    {
+      "id": "2-09",
+      "name_key": "LEVEL_2_09",
+      "hint_key": "HINT_2_09",
+      "region": "coast",
+      "difficulty": 4,
+      "mechanic": "layout_obstacle",
+      "unlock": {"after": "2-08"},
+      "seed": 209,
+      "moves": 44,
+      "goals": [
+        {"type": "build", "level": 6, "count": 1},
+        {"type": "score", "value": 1500}
+      ],
+      "stars": [
+        {"type": "complete"},
+        {"type": "moves_used_max", "value": 42},
+        {"type": "score", "value": 1800}
+      ],
+      "rewards": {"coins_first": 60, "coins_repeat": 5},
+      "rules": {"board": {"height": 1000}, "drop": {"spawn_levels": [1, 2, 3, 4], "spawn_weights": [40, 30, 20, 10]}},
+      "layout": [
+        {"level": 4, "x": 450, "y": 898}
+      ],
+      "obstacles": [
+        {"shape": "circle", "kind": "rock", "x": 250, "y": 720, "r": 55},
+        {"shape": "circle", "kind": "rock", "x": 650, "y": 720, "r": 55}
+      ]
+    },
+    {
+      "id": "2-10",
+      "name_key": "LEVEL_2_10",
+      "hint_key": "HINT_2_10",
+      "region": "coast",
+      "difficulty": 4,
+      "mechanic": "finale",
+      "unlock": {"after": "2-09"},
+      "seed": 210,
+      "moves": 52,
+      "goals": [
+        {"type": "build", "level": 7, "count": 1}
+      ],
+      "stars": [
+        {"type": "complete"},
+        {"type": "moves_used_max", "value": 42},
+        {"type": "score", "value": 2900}
+      ],
+      "rewards": {"coins_first": 80, "coins_repeat": 10},
+      "rules": {"board": {"width": 820, "height": 1150}, "drop": {"spawn_levels": [1, 2, 3, 4], "spawn_weights": [40, 30, 20, 10]}}
+    },
+    {
+      "id": "3-01",
+      "name_key": "LEVEL_3_01",
+      "hint_key": "HINT_3_01",
+      "region": "commerce",
+      "difficulty": 3,
+      "mechanic": "barrier",
+      "unlock": {"after": "2-10"},
+      "seed": 301,
+      "moves": 30,
+      "goals": [
+        {"type": "build", "level": 6, "count": 1}
+      ],
+      "stars": [
+        {"type": "complete"},
+        {"type": "moves_used_max", "value": 24},
+        {"type": "score", "value": 1050}
+      ],
+      "rewards": {"coins_first": 60, "coins_repeat": 5},
+      "rules": {"drop": {"spawn_levels": [1, 2, 3, 4], "spawn_weights": [40, 30, 20, 10]}},
+      "obstacles": [
+        {"shape": "rect", "kind": "barrier", "x": 450, "y": 860, "w": 300, "h": 34, "rot": 0}
+      ]
+    },
+    {
+      "id": "3-02",
+      "name_key": "LEVEL_3_02",
+      "hint_key": "HINT_3_02",
+      "region": "commerce",
+      "difficulty": 3,
+      "mechanic": "divider",
+      "unlock": {"after": "3-01"},
+      "seed": 302,
+      "moves": 22,
+      "goals": [
+        {"type": "build", "level": 5, "count": 2}
+      ],
+      "stars": [
+        {"type": "complete"},
+        {"type": "moves_used_max", "value": 20},
+        {"type": "score", "value": 650}
+      ],
+      "rewards": {"coins_first": 60, "coins_repeat": 5},
+      "rules": {"drop": {"spawn_levels": [1, 2, 3, 4], "spawn_weights": [40, 30, 20, 10]}},
+      "obstacles": [
+        {"shape": "rect", "kind": "barrier", "x": 450, "y": 1080, "w": 30, "h": 400, "rot": 0}
+      ]
+    },
+    {
+      "id": "3-03",
+      "name_key": "LEVEL_3_03",
+      "hint_key": "HINT_3_03",
+      "region": "commerce",
+      "difficulty": 3,
+      "mechanic": "many_goals",
+      "unlock": {"after": "3-02"},
+      "seed": 303,
+      "moves": 20,
+      "goals": [
+        {"type": "build", "level": 4, "count": 4}
+      ],
+      "stars": [
+        {"type": "complete"},
+        {"type": "moves_used_max", "value": 18},
+        {"type": "score", "value": 600}
+      ],
+      "rewards": {"coins_first": 60, "coins_repeat": 5},
+      "rules": {"drop": {"spawn_levels": [1, 2, 3], "spawn_weights": [45, 35, 20]}}
+    },
+    {
+      "id": "3-04",
+      "name_key": "LEVEL_3_04",
+      "hint_key": "HINT_3_04",
+      "region": "commerce",
+      "difficulty": 4,
+      "mechanic": "crowded",
+      "unlock": {"after": "3-03"},
+      "seed": 304,
+      "moves": 17,
+      "goals": [
+        {"type": "build", "level": 6, "count": 1}
+      ],
+      "stars": [
+        {"type": "complete"},
+        {"type": "moves_used_max", "value": 14},
+        {"type": "score", "value": 1050}
+      ],
+      "rewards": {"coins_first": 65, "coins_repeat": 5},
+      "rules": {"board": {"height": 1100}, "drop": {"spawn_levels": [1, 2, 3, 4], "spawn_weights": [40, 30, 20, 10]}},
+      "layout": [
+        {"level": 1, "x": 60, "y": 1050},
+        {"level": 2, "x": 180, "y": 1035},
+        {"level": 3, "x": 330, "y": 1018},
+        {"level": 1, "x": 470, "y": 1050},
+        {"level": 2, "x": 590, "y": 1035},
+        {"level": 3, "x": 750, "y": 1018}
+      ]
+    },
+    {
+      "id": "3-05",
+      "name_key": "LEVEL_3_05",
+      "hint_key": "HINT_3_05",
+      "region": "commerce",
+      "difficulty": 4,
+      "mechanic": "ramp",
+      "unlock": {"after": "3-04"},
+      "seed": 305,
+      "moves": 24,
+      "goals": [
+        {"type": "build", "level": 6, "count": 1}
+      ],
+      "stars": [
+        {"type": "complete"},
+        {"type": "moves_used_max", "value": 20},
+        {"type": "score", "value": 900}
+      ],
+      "rewards": {"coins_first": 65, "coins_repeat": 5},
+      "rules": {"drop": {"spawn_levels": [1, 2, 3, 4], "spawn_weights": [40, 30, 20, 10]}},
+      "obstacles": [
+        {"shape": "rect", "kind": "barrier", "x": 450, "y": 900, "w": 420, "h": 30, "rot": 15}
+      ]
+    },
+    {
+      "id": "3-06",
+      "name_key": "LEVEL_3_06",
+      "hint_key": "HINT_3_06",
+      "region": "commerce",
+      "difficulty": 4,
+      "mechanic": "chain",
+      "unlock": {"after": "3-05"},
+      "seed": 306,
+      "moves": 28,
+      "goals": [
+        {"type": "build", "level": 6, "count": 1},
+        {"type": "chain", "value": 3}
+      ],
+      "stars": [
+        {"type": "complete"},
+        {"type": "moves_used_max", "value": 24},
+        {"type": "score", "value": 1100}
+      ],
+      "rewards": {"coins_first": 65, "coins_repeat": 5},
+      "rules": {"board": {"width": 800}, "drop": {"spawn_levels": [1, 2, 3, 4], "spawn_weights": [40, 30, 20, 10]}}
+    },
+    {
+      "id": "3-07",
+      "name_key": "LEVEL_3_07",
+      "hint_key": "HINT_3_07",
+      "region": "commerce",
+      "difficulty": 4,
+      "mechanic": "very_narrow",
+      "unlock": {"after": "3-06"},
+      "seed": 307,
+      "moves": 20,
+      "goals": [
+        {"type": "build", "level": 6, "count": 1}
+      ],
+      "stars": [
+        {"type": "complete"},
+        {"type": "moves_used_max", "value": 17},
+        {"type": "score", "value": 950}
+      ],
+      "rewards": {"coins_first": 70, "coins_repeat": 10},
+      "rules": {"board": {"width": 600}, "drop": {"spawn_levels": [1, 2, 3, 4], "spawn_weights": [40, 30, 20, 10]}}
+    },
+    {
+      "id": "3-08",
+      "name_key": "LEVEL_3_08",
+      "hint_key": "HINT_3_08",
+      "region": "commerce",
+      "difficulty": 5,
+      "mechanic": "double",
+      "unlock": {"after": "3-07"},
+      "seed": 308,
+      "moves": 32,
+      "goals": [
+        {"type": "build", "level": 6, "count": 2}
+      ],
+      "stars": [
+        {"type": "complete"},
+        {"type": "moves_used_max", "value": 28},
+        {"type": "score", "value": 1650}
+      ],
+      "rewards": {"coins_first": 75, "coins_repeat": 10},
+      "rules": {"drop": {"spawn_levels": [1, 2, 3, 4], "spawn_weights": [40, 30, 20, 10]}}
+    },
+    {
+      "id": "3-09",
+      "name_key": "LEVEL_3_09",
+      "hint_key": "HINT_3_09",
+      "region": "commerce",
+      "difficulty": 5,
+      "mechanic": "barrier_big",
+      "unlock": {"after": "3-08"},
+      "seed": 309,
+      "moves": 64,
+      "goals": [
+        {"type": "build", "level": 7, "count": 1},
+        {"type": "score", "value": 3000}
+      ],
+      "stars": [
+        {"type": "complete"},
+        {"type": "moves_used_max", "value": 56},
+        {"type": "score", "value": 3600}
+      ],
+      "rewards": {"coins_first": 80, "coins_repeat": 10},
+      "rules": {"drop": {"spawn_levels": [1, 2, 3, 4], "spawn_weights": [40, 30, 20, 10]}},
+      "obstacles": [
+        {"shape": "rect", "kind": "barrier", "x": 450, "y": 820, "w": 240, "h": 34, "rot": -10}
+      ]
+    },
+    {
+      "id": "3-10",
+      "name_key": "LEVEL_3_10",
+      "hint_key": "HINT_3_10",
+      "region": "commerce",
+      "difficulty": 5,
+      "mechanic": "finale",
+      "unlock": {"after": "3-09"},
+      "seed": 310,
+      "moves": 55,
+      "goals": [
+        {"type": "build", "level": 8, "count": 1}
+      ],
+      "stars": [
+        {"type": "complete"},
+        {"type": "moves_used_max", "value": 40},
+        {"type": "score", "value": 4500}
+      ],
+      "rewards": {"coins_first": 120, "coins_repeat": 10},
+      "rules": {"drop": {"spawn_levels": [1, 2, 3, 4, 5], "spawn_weights": [35, 28, 20, 12, 5]}}
     }
   ]
 }

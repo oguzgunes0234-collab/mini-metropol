@@ -7,6 +7,8 @@ extends Node2D
 
 signal exit_to_levels
 signal play_level(id: String)
+## Oyuncu profili değişti (bölüm sonucu, ödül): kaydedilmeli.
+signal profile_changed
 
 ## Tasarım yüksekliği: içerik bu yüksekliğe göre yerleştirilir, daha uzun
 ## ekranlarda dikey olarak ortalanır.
@@ -15,7 +17,7 @@ const CONTENT_HEIGHT := 1920.0
 const BOTTOM_SPACE := 110.0
 
 var catalog: LevelCatalog
-var progress: Progress
+var profile: PlayerProfile
 var level: Dictionary = {}
 var data: GameData
 var board: Board
@@ -24,17 +26,15 @@ var effects: Effects
 var session: GameSession
 var hud: Hud
 
-var haptics_enabled := true
-
 var _aiming := false
 var _drop_pending := false
 var _input_enabled := false
 
 
 ## Ekranı kurar ve bölümü (boş sözlükse serbest oyunu) başlatır.
-func start(p_catalog: LevelCatalog, p_progress: Progress, p_level: Dictionary) -> void:
+func start(p_catalog: LevelCatalog, p_profile: PlayerProfile, p_level: Dictionary) -> void:
 	catalog = p_catalog
-	progress = p_progress
+	profile = p_profile
 	level = p_level
 	if board == null:
 		_build()
@@ -53,6 +53,7 @@ func _build() -> void:
 
 	effects = Effects.new()
 	effects.name = "Effects"
+	effects.reduced_motion = profile.setting("reduced_motion")
 	board.add_child(effects)
 
 	session = GameSession.new()
@@ -223,21 +224,22 @@ func _on_scored(points: int, total: int, info: Dictionary) -> void:
 		if info.chain >= 2:
 			text = "%s\n%s" % [text, tr("CHAIN_FMT") % info.chain]
 		effects.popup(info.position, text, def.accent)
-	if haptics_enabled and OS.has_feature("mobile"):
+	if profile.setting("haptics") and OS.has_feature("mobile"):
 		Input.vibrate_handheld(15)
 
 
 func _on_finished(result: Dictionary) -> void:
 	_drop_pending = false
 	_input_enabled = false
-	progress.record(result)
+	var rewards := profile.apply_result(level, result)
+	profile_changed.emit()
 	var has_next := false
 	var tip := ""
 	if not level.is_empty():
 		var next_id := catalog.next_id(level.id)
-		has_next = next_id != "" and progress.is_unlocked(catalog.get_level(next_id))
-		tip = _tip_for(progress.fail_count(level.id))
-	hud.show_result(result, level, has_next, progress.free_best, tip)
+		has_next = next_id != "" and catalog.is_unlocked(catalog.get_level(next_id), profile.progress)
+		tip = _tip_for(profile.progress.fail_count(level.id))
+	hud.show_result(result, level, has_next, profile.progress.free_best, tip, rewards)
 
 
 ## Art arda 2. başarısızlıktan itibaren bir ipucu gösterilir (satın alma önerisi yok).

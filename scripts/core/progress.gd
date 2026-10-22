@@ -1,8 +1,8 @@
 class_name Progress
 extends RefCounted
-## Oyuncunun bölüm ilerlemesi: en iyi yıldız ve puan, tamamlanma, art arda
-## başarısızlık sayısı (ipucu göstermek için) ve bölüm kilitleri.
-## Şimdilik bellekte tutulur; kalıcı kayıt Aşama 4'te bu durum üzerine kurulacak.
+## Oyuncunun bölüm ilerlemesi: en iyi yıldız ve puan, tamamlanma ve art arda
+## başarısızlık sayısı (ipucu göstermek için). Kilit kuralları LevelCatalog'da.
+## PlayerProfile içinde kalıcı olarak kaydedilir.
 
 var best: Dictionary = {}
 var fails: Dictionary = {}
@@ -50,10 +50,6 @@ func total_stars() -> int:
 	for id in best:
 		n += int(best[id].stars)
 	return n
-
-
-func is_unlocked(level: Dictionary) -> bool:
-	return unlock_all or level.unlock_after == "" or is_completed(level.unlock_after)
 
 
 func get_state() -> Dictionary:

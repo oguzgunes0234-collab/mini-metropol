@@ -171,28 +171,38 @@ func test_restart_leaves_nothing_behind() -> void:
 	assert_true(inv.ok(), "\n".join(inv.violations))
 
 
-func test_building_pushed_into_floor_is_rescued_not_lost() -> void:
+func test_building_pushed_through_wall_is_rescued_not_lost() -> void:
 	var s := make_session()
 	var inv := Invariants.new()
 	var r := s.data.radius(1)
-	# Zemine yarıçapının %80'i kadar gömülmüş bina (ağır yığın altında ezilmeyi taklit eder)
-	_spawn(s, inv, 1, Vector2(450, H - r * 0.2))
-	_spawn(s, inv, 2, Vector2(s.data.radius(2) * 0.3, H - 300))
+	# Merkezi zemin ve duvar çizgisini geçmiş binalar (kayayla duvar arasında ezilmeyi taklit eder)
+	_spawn(s, inv, 1, Vector2(450, H + r * 0.3))
+	_spawn(s, inv, 2, Vector2(-s.data.radius(2) * 0.2, H - 300))
 	await run_checked(s, inv, 3)
 	assert_eq(s.board.building_count(), 2, "bina kaybolmamalı")
 	assert_eq(s.board.stats.out_of_bounds, 0)
-	assert_true(s.board.stats.rescues >= 2, "iki bina da geri itilmeli")
+	assert_true(s.board.stats.rescues >= 2, "iki bina da geri konmalı")
 	for b in s.board.buildings:
 		var rr := b.current_radius()
 		assert_true(b.position.y <= H - rr + 1.0 and b.position.x >= rr - 1.0, "bina alanın içinde: %s" % b.position)
 	assert_true(inv.ok(), "\n".join(inv.violations))
 
 
+func test_shallow_penetration_is_left_to_physics() -> void:
+	var s := make_session()
+	var r := s.data.radius(1)
+	# Sığ gömülme kurtarmayı tetiklemez; fizik çözer.
+	s.board.spawn(1, Vector2(450, H - r * 0.6), Vector2.ZERO, "test")
+	await physics_frames(30)
+	assert_eq(s.board.stats.rescues, 0)
+	assert_true(s.board.buildings[0].position.y <= H - r + 2.0)
+
+
 func test_bounds_are_enforced_after_game_over() -> void:
 	var s := make_session()
 	var r := s.data.radius(1)
 	s.board.end_game("danger")
-	s.board.spawn(1, Vector2(450, H - r * 0.2), Vector2.ZERO, "test")
+	s.board.spawn(1, Vector2(450, H + r * 0.3), Vector2.ZERO, "test")
 	await physics_frames(3)
 	assert_eq(s.board.building_count(), 1)
 	assert_true(s.board.buildings[0].position.y <= H - r + 1.0, "oyun bitse de bina alanın içinde kalmalı")

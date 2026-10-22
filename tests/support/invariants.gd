@@ -81,8 +81,11 @@ func check(session: GameSession) -> void:
 			_violation("birleşmede kullanılmış bina %d hâlâ alanda" % b.uid)
 		if b.level < 1 or b.level > session.data.max_level:
 			_violation("geçersiz seviye %d" % b.level)
+		# Merkezi duvar çizgisini kısa süre geçen bina Board tarafından geri
+		# konur (stats.rescues). Binanın tamamı duvarın içindeyse gerçek hata.
 		var p := b.position
-		if p.x < 0.0 or p.x > board.width or p.y > board.height:
+		var r := b.current_radius()
+		if p.x < -r or p.x > board.width + r or p.y > board.height + r:
 			_violation("bina %d alan dışında: %s" % [b.uid, p])
 		live += 1
 

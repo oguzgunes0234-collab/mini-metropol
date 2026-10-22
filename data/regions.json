@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "_note": "Bölgeler (mahalleler). Bir bölge, unlock.after_level tamamlanınca VE toplam yıldız unlock.stars'a ulaşınca açılır. coming_soon: haritada görünür ama henüz bölümü yoktur. Renkler geçicidir.",
+  "regions": [
+    { "id": "starter",    "name_key": "REGION_STARTER",  "color": "#F7F2E8", "accent": "#F6AE2D", "unlock": { "after_level": null,   "stars": 0 } },
+    { "id": "coast",      "name_key": "REGION_COAST",    "color": "#E4F3F7", "accent": "#3FA7C5", "unlock": { "after_level": "1-10", "stars": 12 } },
+    { "id": "commerce",   "name_key": "REGION_COMMERCE", "color": "#F1EAF8", "accent": "#A77BDB", "unlock": { "after_level": "2-10", "stars": 30 } },
+    { "id": "green",      "name_key": "REGION_GREEN",    "color": "#E9F5E6", "accent": "#5BAE5E", "unlock": { "after_level": null,   "stars": 0 }, "coming_soon": true },
+    { "id": "tech",       "name_key": "REGION_TECH",     "color": "#E6ECF8", "accent": "#5B7BD6", "unlock": { "after_level": null,   "stars": 0 }, "coming_soon": true },
+    { "id": "metropolis", "name_key": "REGION_METRO",    "color": "#F8EAEA", "accent": "#D9534F", "unlock": { "after_level": null,   "stars": 0 }, "coming_soon": true }
+  ]
+}

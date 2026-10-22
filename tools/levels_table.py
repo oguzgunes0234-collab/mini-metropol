@@ -32,7 +32,7 @@ def main(path: str) -> None:
             cells.append(f"%{int(s['win_rate'] * 100)} ({s['wins']}/{s['attempts']})" if s else "-")
         gs = lv["bots"].get("greedy", {}).get("stars", [])
         print(f"| {lv['id']} | {lv['difficulty']} | {lv['moves']} | {goals} | {stars} | " + " | ".join(cells) + f" | {'/'.join(map(str, gs))} |")
-    print(f"\nTutarlılık ihlali: {report.get('violations', '?')}. Godot: {report.get('godot', '?')}.")
+    print(f"\nTutarlılık ihlali: {report.get('violations', '?')}. Son çare kurtarma: {report.get('rescues', '?')}. Godot: {report.get('godot', '?')}.")
 
 
 if __name__ == "__main__":

@@ -28,14 +28,18 @@ func _run() -> void:
 	TranslationServer.set_locale(String(_opts.locale))
 	if _opts.has("shape"):
 		GameData.load_default().rules.physics.shape_mode = String(_opts.shape)
+	# Ekran görüntüsü gerçek oyuncu kaydına dokunmaz.
+	App.save_path = "user://screenshot_save.json"
+	SaveStore.new(App.save_path).erase()
 	var app: Node = load("res://scenes/main.tscn").instantiate()
 	root.add_child(app)
 	await process_frame
 	var screen := String(_opts.screen)
 	if screen == "levels":
-		# Örnek ilerleme: ilk üç bölüm farklı yıldızlarla tamamlanmış.
-		for i in 3:
-			app.progress.record({"level_id": app.catalog.levels[i].id, "won": true, "stars": 3 - i, "score": 100})
+		# Örnek ilerleme: ilk bölge tamamlanmış (farklı yıldızlarla), ikinci bölge açık.
+		for i in int(_opts.get("completed", "3")):
+			var lv: Dictionary = app.catalog.levels[i]
+			app.profile.apply_result(lv, {"level_id": lv.id, "won": true, "stars": 3 - i % 3, "score": 100})
 		app.show_levels()
 		await _capture()
 		return
@@ -80,4 +84,5 @@ func _capture() -> void:
 	DirAccess.make_dir_recursive_absolute(out.get_base_dir())
 	img.save_png(out)
 	print("Kaydedildi: ", out, " (", img.get_width(), "x", img.get_height(), ")")
+	SaveStore.new(App.save_path).erase()
 	quit()

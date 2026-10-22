@@ -127,6 +127,22 @@ class StarRow:
 			draw_colored_polygon(UiKit.star_points(c, star_size), UiKit.STAR if flags[i] else UiKit.STAR_EMPTY)
 
 
+## Madeni para simgesi.
+class CoinIcon:
+	extends Control
+	var radius := 22.0
+
+	func _init(p_radius: float = 22.0) -> void:
+		radius = p_radius
+		custom_minimum_size = Vector2(radius * 2.2, radius * 2.2)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var c := size * 0.5
+		draw_circle(c, radius, Color("#E39B1F"), true, -1.0, true)
+		draw_circle(c, radius * 0.72, Color("#F7CD6B"), true, -1.0, true)
+
+
 ## Bir hedefin simgesi ve ilerlemesi ("1/2", "350/600", "x2/x3").
 class GoalChip:
 	extends Control
