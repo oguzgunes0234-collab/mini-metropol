@@ -1,31 +1,34 @@
 class_name Hud
 extends CanvasLayer
-## Oyun ekranı arayüzü: puan, sıradaki bina, hamle sayısı, yeniden başlat,
-## oyun sonu ve duraklatma panelleri, geliştirici göstergesi.
+## Oyun ekranı arayüzü: menü düğmesi, kalan hamle, puan, sıradaki bina,
+## bölüm hedefleri; giriş, duraklatma ve sonuç panelleri; geliştirici göstergesi.
 ## GEÇİCİ TASARIM: Aşama 6'da tasarım sistemiyle yeniden ele alınacak.
 
-signal restart_pressed
+signal start_pressed
+signal pause_pressed
 signal resume_pressed
-
-const INK := Color("#2F4858")
-const PAPER := Color("#FFFDF8")
-const ACCENT := Color("#F26419")
+signal restart_pressed
+signal levels_pressed
+signal next_pressed
 
 var data: GameData
 
 var _root: Control
 var _top: Control
+var _pause_button: Button
+var _moves_caption: Label
+var _moves_label: Label
 var _score_caption: Label
 var _score_label: Label
-var _moves_label: Label
 var _next_caption: Label
 var _next_preview: NextPreview
-var _restart_button: Button
+var _goals_row: HBoxContainer
+var _settling_label: Label
 var _debug_label: Label
-var _game_over: Control
-var _game_over_score: Label
-var _game_over_best: Label
-var _pause: Control
+var _intro: Array
+var _pause: Array
+var _result: Array
+var _chips: Array[UiKit.GoalChip] = []
 
 
 class NextPreview:
@@ -55,50 +58,50 @@ func setup(p_data: GameData) -> void:
 	_top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_top)
 
-	_score_caption = _make_label(tr("HUD_SCORE"), 30, INK.lightened(0.25))
-	_score_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_top.add_child(_score_caption)
-	_score_label = _make_label("0", 84, INK)
-	_score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_top.add_child(_score_label)
-	_moves_label = _make_label("", 30, INK.lightened(0.25))
-	_moves_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_top.add_child(_moves_label)
+	_pause_button = UiKit.button(tr("HUD_PAUSE"), 34, true, Vector2(170, 96))
+	_pause_button.pressed.connect(func(): pause_pressed.emit())
+	_top.add_child(_pause_button)
 
-	_next_caption = _make_label(tr("HUD_NEXT"), 28, INK.lightened(0.25))
-	_next_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_moves_caption = UiKit.label(tr("HUD_MOVES_LEFT"), 28, UiKit.INK_SOFT, HORIZONTAL_ALIGNMENT_CENTER)
+	_top.add_child(_moves_caption)
+	_moves_label = UiKit.label("0", 72, UiKit.INK, HORIZONTAL_ALIGNMENT_CENTER)
+	_top.add_child(_moves_label)
+	_score_caption = UiKit.label(tr("HUD_SCORE"), 28, UiKit.INK_SOFT, HORIZONTAL_ALIGNMENT_CENTER)
+	_top.add_child(_score_caption)
+	_score_label = UiKit.label("0", 52, UiKit.INK, HORIZONTAL_ALIGNMENT_CENTER)
+	_top.add_child(_score_label)
+
+	_next_caption = UiKit.label(tr("HUD_NEXT"), 28, UiKit.INK_SOFT, HORIZONTAL_ALIGNMENT_CENTER)
 	_top.add_child(_next_caption)
 	_next_preview = NextPreview.new()
 	_next_preview.data = data
-	_next_preview.shape_mode = data.section("physics").shape_mode
 	_next_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_top.add_child(_next_preview)
 
-	_restart_button = _make_button(tr("HUD_RESTART"), 34)
-	_restart_button.pressed.connect(func(): restart_pressed.emit())
-	_top.add_child(_restart_button)
+	_goals_row = HBoxContainer.new()
+	_goals_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_goals_row.add_theme_constant_override("separation", 16)
+	_goals_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_top.add_child(_goals_row)
 
-	_debug_label = _make_label("", 26, INK)
+	_settling_label = UiKit.label(tr("HUD_SETTLING"), 30, UiKit.ACCENT, HORIZONTAL_ALIGNMENT_CENTER)
+	_settling_label.visible = false
+	_top.add_child(_settling_label)
+
+	_debug_label = UiKit.label("", 26)
 	_debug_label.visible = false
 	_root.add_child(_debug_label)
 
-	_game_over = _make_overlay()
-	var go_box := _game_over.get_node("Panel/Box") as VBoxContainer
-	go_box.add_child(_make_label(tr("GAMEOVER_TITLE"), 60, INK, true))
-	_game_over_score = _make_label("", 44, INK, true)
-	go_box.add_child(_game_over_score)
-	_game_over_best = _make_label("", 32, INK.lightened(0.3), true)
-	go_box.add_child(_game_over_best)
-	var retry := _make_button(tr("GAMEOVER_RETRY"), 44)
-	retry.pressed.connect(func(): restart_pressed.emit())
-	go_box.add_child(retry)
+	_intro = UiKit.overlay(_root)
+	_pause = UiKit.overlay(_root)
+	_result = UiKit.overlay(_root)
 
-	_pause = _make_overlay()
-	var pause_box := _pause.get_node("Panel/Box") as VBoxContainer
-	pause_box.add_child(_make_label(tr("PAUSE_TITLE"), 60, INK, true))
-	var resume := _make_button(tr("PAUSE_RESUME"), 44)
-	resume.pressed.connect(func(): resume_pressed.emit())
-	pause_box.add_child(resume)
+
+## Yeni bölüm/oyun için verileri tazeler (bölümler farklı kurallar kullanabilir).
+func set_data(p_data: GameData) -> void:
+	data = p_data
+	_next_preview.data = data
+	_next_preview.shape_mode = data.section("physics").shape_mode
 
 
 ## vp: görünür alan boyutu (tasarım birimi), top: güvenli alanın üst sınırı.
@@ -106,29 +109,38 @@ func layout(vp: Vector2, top: float) -> void:
 	var w := minf(vp.x, 1080.0)
 	var left := (vp.x - w) * 0.5
 	_top.position = Vector2(left, top)
-	_top.size = Vector2(w, 300)
-	_score_caption.position = Vector2(w * 0.5 - 200, 28)
-	_score_caption.size = Vector2(400, 40)
-	_score_label.position = Vector2(w * 0.5 - 250, 62)
-	_score_label.size = Vector2(500, 100)
-	_moves_label.position = Vector2(w * 0.5 - 200, 162)
-	_moves_label.size = Vector2(400, 40)
-	_next_caption.position = Vector2(w - 230, 28)
-	_next_caption.size = Vector2(180, 40)
-	_next_preview.position = Vector2(w - 200, 70)
-	_next_preview.size = Vector2(120, 120)
-	_restart_button.position = Vector2(50, 60)
-	_restart_button.size = Vector2(200, 96)
-	_debug_label.position = Vector2(left + 24, vp.y - 140)
-	_debug_label.size = Vector2(w - 48, 120)
+	_top.size = Vector2(w, 320)
+	_pause_button.position = Vector2(36, 44)
+	_pause_button.size = Vector2(170, 96)
+	_moves_caption.position = Vector2(w * 0.5 - 250, 24)
+	_moves_caption.size = Vector2(220, 36)
+	_moves_label.position = Vector2(w * 0.5 - 250, 56)
+	_moves_label.size = Vector2(220, 96)
+	_score_caption.position = Vector2(w * 0.5 + 30, 24)
+	_score_caption.size = Vector2(220, 36)
+	_score_label.position = Vector2(w * 0.5 + 30, 66)
+	_score_label.size = Vector2(220, 80)
+	_next_caption.position = Vector2(w - 230, 24)
+	_next_caption.size = Vector2(190, 36)
+	_next_preview.position = Vector2(w - 195, 60)
+	_next_preview.size = Vector2(120, 110)
+	_goals_row.position = Vector2(20, 176)
+	_goals_row.size = Vector2(w - 40, 96)
+	_settling_label.position = Vector2(0, 278)
+	_settling_label.size = Vector2(w, 40)
+	_debug_label.position = Vector2(left + 24, vp.y - 110)
+	_debug_label.size = Vector2(w - 48, 100)
+
+
+func set_moves(used: int, limit: int) -> void:
+	_moves_caption.text = tr("HUD_MOVES_LEFT")
+	_moves_label.text = str(limit - used) if limit > 0 else str(used)
+	var low := limit > 0 and limit - used <= 3
+	_moves_label.add_theme_color_override("font_color", UiKit.ACCENT if low else UiKit.INK)
 
 
 func set_score(value: int) -> void:
 	_score_label.text = str(value)
-
-
-func set_moves(value: int) -> void:
-	_moves_label.text = "%s: %d" % [tr("HUD_MOVES"), value]
 
 
 func set_next(level: int) -> void:
@@ -136,18 +148,114 @@ func set_next(level: int) -> void:
 	_next_preview.queue_redraw()
 
 
-func show_game_over(final_score: int, best: int) -> void:
-	_game_over_score.text = tr("GAMEOVER_SCORE") % final_score
-	_game_over_best.text = tr("GAMEOVER_BEST") % best
-	_game_over.visible = true
+func set_goals(summary: Array) -> void:
+	if summary.size() != _chips.size():
+		UiKit.clear(_goals_row)
+		_chips.clear()
+		for g in summary:
+			var chip := UiKit.GoalChip.new(data, g)
+			_goals_row.add_child(chip)
+			_chips.append(chip)
+	for i in summary.size():
+		_chips[i].data = data
+		_chips[i].set_goal(summary[i])
 
 
-func hide_game_over() -> void:
-	_game_over.visible = false
+func set_settling(value: bool) -> void:
+	_settling_label.visible = value
 
 
-func show_pause(value: bool) -> void:
-	_pause.visible = value
+# --- Paneller ---
+
+func show_intro(level: Dictionary, goals: Array) -> void:
+	var box: VBoxContainer = _intro[1]
+	UiKit.clear(box)
+	box.add_child(UiKit.label(tr("UI_LEVEL_FMT") % level.id, 32, UiKit.INK_SOFT, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(UiKit.label(tr(level.name_key), 60, UiKit.INK, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(UiKit.label(tr("UI_GOALS"), 28, UiKit.INK_SOFT))
+	for g in goals:
+		box.add_child(_goal_line(g))
+	box.add_child(UiKit.label(tr("UI_STARS"), 28, UiKit.INK_SOFT))
+	for s in level.stars:
+		box.add_child(_star_line(UiKit.star_text(s), true))
+	var hint := UiKit.label(tr(level.hint_key), 32, UiKit.INK_SOFT)
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.custom_minimum_size = Vector2(640, 0)
+	box.add_child(hint)
+	var start := UiKit.button(tr("UI_START"), 44)
+	start.pressed.connect(func(): start_pressed.emit())
+	box.add_child(start)
+	_show(_intro)
+
+
+func show_pause(level: Dictionary) -> void:
+	var box: VBoxContainer = _pause[1]
+	UiKit.clear(box)
+	box.add_child(UiKit.label(tr("PAUSE_TITLE"), 60, UiKit.INK, HORIZONTAL_ALIGNMENT_CENTER))
+	if not level.is_empty():
+		box.add_child(UiKit.label("%s — %s" % [tr("UI_LEVEL_FMT") % level.id, tr(level.name_key)], 32, UiKit.INK_SOFT, HORIZONTAL_ALIGNMENT_CENTER))
+	var resume := UiKit.button(tr("PAUSE_RESUME"), 42)
+	resume.pressed.connect(func(): resume_pressed.emit())
+	box.add_child(resume)
+	var restart := UiKit.button(tr("PAUSE_RESTART"), 42, false)
+	restart.pressed.connect(func(): restart_pressed.emit())
+	box.add_child(restart)
+	var levels := UiKit.button(tr("PAUSE_TO_LEVELS"), 42, false)
+	levels.pressed.connect(func(): levels_pressed.emit())
+	box.add_child(levels)
+	_show(_pause)
+
+
+## Bölüm/oyun sonucu. tip: art arda başarısızlıktan sonra gösterilecek ipucu ("" ise yok).
+func show_result(result: Dictionary, level: Dictionary, has_next: bool, best_score: int, tip: String) -> void:
+	var box: VBoxContainer = _result[1]
+	UiKit.clear(box)
+	var title: String
+	if result.won:
+		title = tr("RESULT_WON")
+	elif result.reason == "out_of_moves":
+		title = tr("RESULT_OUT_OF_MOVES")
+	else:
+		title = tr("RESULT_LOT_FULL")
+	box.add_child(UiKit.label(title, 60, UiKit.GOOD if result.won else UiKit.INK, HORIZONTAL_ALIGNMENT_CENTER))
+	if not level.is_empty():
+		box.add_child(UiKit.label("%s — %s" % [tr("UI_LEVEL_FMT") % level.id, tr(level.name_key)], 30, UiKit.INK_SOFT, HORIZONTAL_ALIGNMENT_CENTER))
+		if result.won:
+			box.add_child(UiKit.StarRow.new(result.star_flags, 46))
+			for i in level.stars.size():
+				box.add_child(_star_line(UiKit.star_text(level.stars[i]), result.star_flags[i]))
+		else:
+			for g in result.goals:
+				box.add_child(_goal_line(g))
+		box.add_child(UiKit.label(tr("RESULT_MOVES_USED") % [result.moves_used, result.moves_limit], 34, UiKit.INK, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(UiKit.label(tr("GAMEOVER_SCORE") % result.score, 40, UiKit.INK, HORIZONTAL_ALIGNMENT_CENTER))
+	if level.is_empty():
+		box.add_child(UiKit.label(tr("GAMEOVER_BEST") % best_score, 32, UiKit.INK_SOFT, HORIZONTAL_ALIGNMENT_CENTER))
+	if tip != "":
+		var tip_label := UiKit.label("%s: %s" % [tr("TIP_TITLE"), tip], 32, UiKit.INK_SOFT)
+		tip_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		tip_label.custom_minimum_size = Vector2(640, 0)
+		box.add_child(tip_label)
+	if result.won and has_next:
+		var next := UiKit.button(tr("UI_NEXT"), 44)
+		next.pressed.connect(func(): next_pressed.emit())
+		box.add_child(next)
+	var again := UiKit.button(tr("UI_REPLAY") if result.won else tr("UI_RETRY"), 42, not (result.won and has_next))
+	again.pressed.connect(func(): restart_pressed.emit())
+	box.add_child(again)
+	var levels := UiKit.button(tr("PAUSE_TO_LEVELS") if not level.is_empty() else tr("UI_LEVELS"), 42, false)
+	levels.pressed.connect(func(): levels_pressed.emit())
+	box.add_child(levels)
+	_show(_result)
+
+
+func hide_panels() -> void:
+	for p in [_intro, _pause, _result]:
+		p[0].visible = false
+
+
+func any_panel_visible() -> bool:
+	return _intro[0].visible or _pause[0].visible or _result[0].visible
 
 
 func is_debug_visible() -> bool:
@@ -162,67 +270,32 @@ func set_debug_text(text: String) -> void:
 	_debug_label.text = text
 
 
-func _make_label(text: String, font_size: int, color: Color, centered: bool = false) -> Label:
-	var l := Label.new()
-	l.text = text
-	l.add_theme_font_size_override("font_size", font_size)
-	l.add_theme_color_override("font_color", color)
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if centered:
-		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	return l
+func _show(p: Array) -> void:
+	hide_panels()
+	p[0].visible = true
 
 
-func _make_button(text: String, font_size: int) -> Button:
-	var b := Button.new()
-	b.text = text
-	b.add_theme_font_size_override("font_size", font_size)
-	b.custom_minimum_size = Vector2(200, 96)
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = INK
-	normal.set_corner_radius_all(28)
-	normal.content_margin_left = 28
-	normal.content_margin_right = 28
-	var hover := normal.duplicate() as StyleBoxFlat
-	hover.bg_color = INK.lightened(0.12)
-	var pressed := normal.duplicate() as StyleBoxFlat
-	pressed.bg_color = ACCENT
-	b.add_theme_stylebox_override("normal", normal)
-	b.add_theme_stylebox_override("hover", hover)
-	b.add_theme_stylebox_override("pressed", pressed)
-	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	b.add_theme_color_override("font_color", PAPER)
-	b.add_theme_color_override("font_hover_color", PAPER)
-	b.add_theme_color_override("font_pressed_color", PAPER)
-	return b
+func _star_line(text: String, filled: bool) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 14)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(UiKit.StarRow.new([filled], 18))
+	var l := UiKit.label(text, 34, UiKit.INK if filled else UiKit.INK_SOFT)
+	l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(l)
+	return row
 
 
-func _make_overlay() -> Control:
-	var overlay := ColorRect.new()
-	overlay.color = Color(0.1, 0.15, 0.2, 0.55)
-	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
-	overlay.visible = false
-	_root.add_child(overlay)
-
-	var panel := PanelContainer.new()
-	panel.name = "Panel"
-	var style := StyleBoxFlat.new()
-	style.bg_color = PAPER
-	style.set_corner_radius_all(40)
-	style.content_margin_left = 56
-	style.content_margin_right = 56
-	style.content_margin_top = 48
-	style.content_margin_bottom = 48
-	panel.add_theme_stylebox_override("panel", style)
-	panel.set_anchors_preset(Control.PRESET_CENTER)
-	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	panel.grow_vertical = Control.GROW_DIRECTION_BOTH
-	panel.custom_minimum_size = Vector2(720, 0)
-	overlay.add_child(panel)
-
-	var box := VBoxContainer.new()
-	box.name = "Box"
-	box.add_theme_constant_override("separation", 28)
-	panel.add_child(box)
-	return overlay
+func _goal_line(g: Dictionary) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 18)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var summary := g.duplicate()
+	if not summary.has("target"):
+		summary.target = int(g.get("count", g.get("value", 0)))
+	var chip := UiKit.GoalChip.new(data, summary)
+	row.add_child(chip)
+	var text := UiKit.label(UiKit.goal_text(data, g), 34)
+	text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(text)
+	return row

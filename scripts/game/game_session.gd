@@ -213,6 +213,7 @@ func capture_snapshot() -> Dictionary:
 		"moves": moves,
 		"cooldown_left": cooldown_left,
 		"state": state,
+		"events": event_log.size(),
 	}
 
 
@@ -227,6 +228,8 @@ func restore_snapshot(s: Dictionary) -> void:
 	_settle_hold = 0.0
 	_settle_elapsed = 0.0
 	result = {}
+	# Geri alınan hamlenin puan olayları da geri alınır.
+	event_log.resize(mini(event_log.size(), int(s.get("events", event_log.size()))))
 	_set_state(int(s.state) as State)
 	queue_changed.emit(queue.current(), queue.upcoming())
 	goals_changed.emit()

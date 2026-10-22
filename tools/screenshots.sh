@@ -22,8 +22,11 @@ shot() { # ad çözünürlük [ek argümanlar]
     | grep -E "Kaydedildi|SCRIPT ERROR|^ERROR: [^C]" || true
 }
 
-shot phone_9x16      540x960  --drops=45 --seed=3
-shot phone_19_5x9    540x1170 --drops=45 --seed=3
-shot tablet_3x4      720x960  --drops=45 --seed=3
-shot game_over       540x1170 --drops=60 --seed=8 --bot=random --game-over
-shot english_debug   540x960  --drops=30 --seed=4 --locale=en --debug
+shot levels          540x960  --screen=levels
+shot intro_1-04      540x960  --screen=intro --level=1-04
+shot play_1-07       540x960  --screen=play  --level=1-07 --drops=10
+shot play_1-10_tall  540x1170 --screen=play  --level=1-10 --drops=14
+shot won_1-01        540x960  --screen=won   --level=1-01
+shot lost_1-06       540x960  --screen=lost  --level=1-06 --drops=8
+shot pause_tablet    720x960  --screen=pause --level=1-09 --drops=6
+shot free_en_debug   540x960  --screen=free  --drops=30 --locale=en --debug

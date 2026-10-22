@@ -1,14 +1,22 @@
+class_name GameScreen
 extends Node2D
-## Oyun ekranı denetleyicisi: dokunma/fare girdisi, yerleşim, arayüz ve
-## efektleri GameSession'a bağlar. Oyun kuralları burada değil,
-## GameSession ve Board içindedir.
+## Oyun ekranı: dokunma/fare girdisi, yerleşim, arayüz ve efektleri
+## GameSession'a bağlar. Bölüm kipinde giriş paneli, hedefler ve sonuç;
+## serbest kipte yalnızca puan. Oyun kuralları burada değil, GameSession
+## ve Board içindedir.
+
+signal exit_to_levels
+signal play_level(id: String)
 
 ## Tasarım yüksekliği: içerik bu yüksekliğe göre yerleştirilir, daha uzun
 ## ekranlarda dikey olarak ortalanır.
 const CONTENT_HEIGHT := 1920.0
 ## Alanın altında bırakılan boşluk (ileride güçlendirici çubuğu için).
-const BOTTOM_SPACE := 170.0
+const BOTTOM_SPACE := 110.0
 
+var catalog: LevelCatalog
+var progress: Progress
+var level: Dictionary = {}
 var data: GameData
 var board: Board
 var dropper: Dropper
@@ -20,26 +28,28 @@ var haptics_enabled := true
 
 var _aiming := false
 var _drop_pending := false
-var _best_score := 0
+var _input_enabled := false
 
 
-func _ready() -> void:
-	data = GameData.load_default()
-	if not data.is_valid():
-		for e in data.errors:
-			push_error(e)
-		_show_data_error()
-		return
+## Ekranı kurar ve bölümü (boş sözlükse serbest oyunu) başlatır.
+func start(p_catalog: LevelCatalog, p_progress: Progress, p_level: Dictionary) -> void:
+	catalog = p_catalog
+	progress = p_progress
+	level = p_level
+	if board == null:
+		_build()
+	_begin(true)
 
+
+func _build() -> void:
 	board = Board.new()
 	board.name = "Board"
 	add_child(board)
-	board.setup(data)
+	board.setup(catalog.base)
 
 	dropper = Dropper.new()
 	dropper.name = "Dropper"
 	board.add_child(dropper)
-	dropper.setup(data, board)
 
 	effects = Effects.new()
 	effects.name = "Effects"
@@ -48,39 +58,78 @@ func _ready() -> void:
 	session = GameSession.new()
 	session.name = "Session"
 	add_child(session)
-	session.setup(data, board)
+	session.setup(catalog.base, board)
 
 	hud = Hud.new()
 	hud.name = "Hud"
 	add_child(hud)
-	hud.setup(data)
-	hud.restart_pressed.connect(_restart)
+	hud.setup(catalog.base)
+	hud.start_pressed.connect(_on_start_pressed)
+	hud.pause_pressed.connect(_pause)
 	hud.resume_pressed.connect(_resume)
+	hud.restart_pressed.connect(func(): _begin(false))
+	hud.levels_pressed.connect(_to_levels)
+	hud.next_pressed.connect(_to_next)
 
 	session.queue_changed.connect(_on_queue_changed)
 	session.scored.connect(_on_scored)
 	session.finished.connect(_on_finished)
-	session.dropped.connect(func(_level: int, _b: Building): hud.set_moves(session.moves))
+	session.goals_changed.connect(func(): hud.set_goals(session.goals.summary()))
+	session.state_changed.connect(func(s: GameSession.State): hud.set_settling(s == GameSession.State.SETTLING))
+	session.dropped.connect(func(_level: int, _b: Building): hud.set_moves(session.moves, session.moves_limit))
 
 	get_viewport().size_changed.connect(_layout)
-	_layout()
-	_restart()
 
 
-func _restart() -> void:
+## show_intro: bölüm ilk açıldığında giriş paneli; yeniden denemede atlanır.
+func _begin(show_intro: bool) -> void:
 	get_tree().paused = false
-	hud.show_pause(false)
-	hud.hide_game_over()
+	hud.hide_panels()
 	_drop_pending = false
 	_aiming = false
-	session.start(randi())
+	data = catalog.base if level.is_empty() else catalog.data_for(level)
+	hud.set_data(data)
+	# Bırakıcı oturumdan önce kurulur: oturum başlarken sıradaki binayı ona bildirir.
+	dropper.setup(data, board)
+	if level.is_empty():
+		session.start(randi())
+	else:
+		session.start_level(level, data)
+	dropper.set_aim(board.width * 0.5)
 	hud.set_score(0)
-	hud.set_moves(0)
+	hud.set_moves(0, session.moves_limit)
+	hud.set_goals(session.goals.summary())
+	hud.set_settling(false)
+	_layout()
+	_input_enabled = level.is_empty() or not show_intro
+	if not _input_enabled:
+		hud.show_intro(level, level.goals)
+
+
+func _on_start_pressed() -> void:
+	hud.hide_panels()
+	_input_enabled = true
+
+
+func _pause() -> void:
+	if session.is_finished() or hud.any_panel_visible():
+		return
+	get_tree().paused = true
+	hud.show_pause(level)
 
 
 func _resume() -> void:
-	hud.show_pause(false)
+	hud.hide_panels()
 	get_tree().paused = false
+
+
+func _to_levels() -> void:
+	get_tree().paused = false
+	exit_to_levels.emit()
+
+
+func _to_next() -> void:
+	play_level.emit(catalog.next_id(level.id))
 
 
 func _process(_delta: float) -> void:
@@ -88,7 +137,7 @@ func _process(_delta: float) -> void:
 		return
 	if _drop_pending and session.can_drop():
 		_drop_pending = not session.try_drop(dropper.aim_x) and session.state == GameSession.State.PLAYING
-	dropper.set_ready(session.can_drop())
+	dropper.set_ready(session.can_drop() and _input_enabled)
 	if hud.is_debug_visible():
 		hud.set_debug_text("FPS %d  |  bina %d  |  fizik %.2f ms\nhamle %d  birleşme %d  en yüksek seviye %d  alan dışı %d" % [
 			Engine.get_frames_per_second(),
@@ -101,6 +150,26 @@ func _process(_delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if session == null:
 		return
+	if event is InputEventKey and event.pressed and not event.echo:
+		match event.keycode:
+			KEY_R:
+				_begin(false)
+			KEY_F3:
+				hud.toggle_debug()
+			KEY_SPACE:
+				_request_drop()
+			KEY_ESCAPE:
+				_pause()
+			KEY_B:
+				# Geliştirici: daire / yuvarlatılmış kare (deneysel) şekilleri karşılaştır.
+				var physics := catalog.base.section("physics")
+				physics.shape_mode = "rounded_box" if physics.shape_mode == "circle" else "circle"
+				for lv in catalog.levels:
+					catalog.data_for(lv).section("physics").shape_mode = physics.shape_mode
+				_begin(false)
+		return
+	if not _input_enabled or get_tree().paused:
+		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
 			_aiming = true
@@ -111,28 +180,16 @@ func _unhandled_input(event: InputEvent) -> void:
 			_request_drop()
 	elif event is InputEventMouseMotion:
 		_aim(event.position)
-	elif event is InputEventKey and event.pressed and not event.echo:
-		match event.keycode:
-			KEY_R:
-				_restart()
-			KEY_F3:
-				hud.toggle_debug()
-			KEY_SPACE:
-				_request_drop()
-			KEY_B:
-				# Geliştirici: daire / yuvarlatılmış kare (deneysel) şekilleri karşılaştır.
-				var physics := data.section("physics")
-				physics.shape_mode = "rounded_box" if physics.shape_mode == "circle" else "circle"
-				get_tree().reload_current_scene()
 
 
 func _notification(what: int) -> void:
-	# Uygulama arka plana alınınca oyunu duraklat (mobil).
+	if session == null:
+		return
+	# Uygulama arka plana alınınca (mobil) ya da geri tuşunda oyunu duraklat.
 	var backgrounded := what == NOTIFICATION_APPLICATION_PAUSED \
 		or (what == NOTIFICATION_APPLICATION_FOCUS_OUT and OS.has_feature("mobile"))
-	if backgrounded and session != null and session.state == GameSession.State.PLAYING:
-		get_tree().paused = true
-		hud.show_pause(true)
+	if (backgrounded or what == NOTIFICATION_WM_GO_BACK_REQUEST) and _input_enabled:
+		_pause()
 
 
 func _aim(screen_pos: Vector2) -> void:
@@ -144,7 +201,7 @@ func _aim(screen_pos: Vector2) -> void:
 ## Bırakma hemen yapılamıyorsa (bekleme süresi ya da bırakma noktasından
 ## henüz çekilmemiş bir bina), mümkün olur olmaz yapılır.
 func _request_drop() -> void:
-	if session.state != GameSession.State.PLAYING:
+	if session.state != GameSession.State.PLAYING or not _input_enabled:
 		return
 	_drop_pending = not session.try_drop(dropper.aim_x) and session.state == GameSession.State.PLAYING
 
@@ -171,15 +228,31 @@ func _on_scored(points: int, total: int, info: Dictionary) -> void:
 
 
 func _on_finished(result: Dictionary) -> void:
-	_best_score = maxi(_best_score, result.score)
 	_drop_pending = false
-	hud.show_game_over(result.score, _best_score)
+	_input_enabled = false
+	progress.record(result)
+	var has_next := false
+	var tip := ""
+	if not level.is_empty():
+		var next_id := catalog.next_id(level.id)
+		has_next = next_id != "" and progress.is_unlocked(catalog.get_level(next_id))
+		tip = _tip_for(progress.fail_count(level.id))
+	hud.show_result(result, level, has_next, progress.free_best, tip)
+
+
+## Art arda 2. başarısızlıktan itibaren bir ipucu gösterilir (satın alma önerisi yok).
+func _tip_for(fails: int) -> String:
+	if fails < 2:
+		return ""
+	var tips := [tr(level.hint_key), tr("TIP_GENERIC_1"), tr("TIP_GENERIC_2"), tr("TIP_GENERIC_3")]
+	return tips[(fails - 2) % tips.size()]
 
 
 func _layout() -> void:
 	var vp := get_viewport_rect().size
 	var offset_y := maxf(0.0, (vp.y - CONTENT_HEIGHT) * 0.5)
 	board.position = Vector2(roundf((vp.x - board.width) * 0.5), roundf(offset_y + CONTENT_HEIGHT - BOTTOM_SPACE - board.height))
+	board.queue_redraw()
 	hud.layout(vp, offset_y + _safe_top_inset(vp))
 
 
@@ -192,14 +265,3 @@ func _safe_top_inset(vp: Vector2) -> float:
 		return 0.0
 	var safe := DisplayServer.get_display_safe_area()
 	return float(safe.position.y) * vp.y / float(win.y)
-
-
-func _show_data_error() -> void:
-	var label := Label.new()
-	label.text = "%s\n%s" % [tr("DATA_ERROR"), "\n".join(data.errors)]
-	label.add_theme_font_size_override("font_size", 32)
-	label.add_theme_color_override("font_color", Color("#B00020"))
-	label.position = Vector2(40, 120)
-	label.size = Vector2(1000, 1600)
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	add_child(label)
