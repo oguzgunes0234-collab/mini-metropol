@@ -70,3 +70,29 @@ proje ilk açılışta uyarısız çalışsın diye. `.godot/` önbelleği Git'e
 ## 11. Dal düzeni
 `main` yalnızca onaylanmış aşamaları içerir. Her aşama ayrı dalda geliştirilir
 (şu an: `asama-1-2-cekirdek`); onayınla `main`'e birleştirilir.
+
+## 12. Bölüm zorluğu: hamle verimliliği + alan baskısı
+Botlarla ölçüldü (bkz. LEVELS.md). Hamle sınırı olmadan, "bir apartman üret"
+gibi küçük hedeflerde rastgele oynayan bot neredeyse akıllı bot kadar hızlıydı:
+kısa vadede birleşmeler fizik sayesinde kendiliğinden oluyor. Beceri farkı
+asıl olarak **hamle verimliliğinde** ve **dar/alçak arsada büyük hedeflerde**
+çıkıyor. Bu yüzden:
+- Hamle sınırı, akıllı botun hedefe ulaştığı hamle dağılımına göre seçilir.
+- Orta ve ileri bölümler dar/alçak arsa, engel ve büyük hedef kullanır.
+- Zorluk rastgeleliği artırarak değil, alanı ve hamleyi kısıtlayarak artar.
+  Her bölümün bina sırası sabittir: tekrar denemede aynı sıra gelir, oyuncu
+  öğrenebilir.
+
+## 13. Kazanma anında bitiş, son hamlede bekleme
+Hedefler tamamlandığı anda bölüm kazanılır. Son hamleden sonra binalar
+durana kadar beklenir; bu sırada oluşan birleşmeler de sayılır (oyuncunun
+son hamlesi "boşa" gitmez).
+
+## 14. İlerleme şimdilik bellekte
+Bölüm kilitleri ve yıldızlar oturum boyunca tutulur, uygulama kapanınca
+sıfırlanır. Kalıcı kayıt (bozuk dosyaya dayanıklı) Aşama 4'te eklenecek;
+durum yapısı (`Progress.get_state/set_state`) buna hazır ve JSON testi var.
+
+## 15. Başarısızlık sonrası yalnızca ipucu
+Art arda 2. başarısızlıktan itibaren sonuç ekranında strateji ipucu çıkar.
+Satın alma, reklam veya "ek hamle al" önerisi gösterilmez.

@@ -102,6 +102,14 @@ func _evaluate(s: GameSession) -> float:
 	var v := 0.0
 	for i in s.goals.goals.size():
 		v += 1000.0 * minf(1.0, float(s.goals.progress[i]) / s.goals.target(i))
+		var g: Dictionary = s.goals.goals[i]
+		if g.type == "build" and not s.goals.is_done(i):
+			# Kısmi ilerleme: hedef seviyeye en çok yaklaşmış bina.
+			var best := 1
+			for b in s.board.buildings:
+				if b.level < int(g.level):
+					best = maxi(best, b.level)
+			v += 400.0 * float(best - 1) / float(int(g.level) - 1) / s.goals.target(i)
 	v += s.score.score * 0.5
 	var top := s.board.height
 	for b in s.board.buildings:

@@ -68,7 +68,7 @@ func _run() -> void:
 		for bot_name in bots:
 			var kind := SimBot.kind_from_name(bot_name)
 			var attempts := int(_opts.planner_attempts) if kind == SimBot.Kind.PLANNER else int(_opts.attempts)
-			var stats := {"attempts": attempts, "wins": 0, "stars": [0, 0, 0, 0], "moves_on_win": [], "scores_on_win": [], "scores": [], "reasons": {}, "violations": 0}
+			var stats := {"attempts": attempts, "wins": 0, "stars": [0, 0, 0, 0], "moves_on_win": [], "scores_on_win": [], "chains_on_win": [], "scores": [], "reasons": {}, "violations": 0}
 			for a in attempts:
 				var bot := SimBot.new(kind, hash(lv.id) + a * 7919)
 				session.start_level(lv, cat.data_for(lv))
@@ -91,6 +91,7 @@ func _run() -> void:
 					stats.wins += 1
 					stats.moves_on_win.append(session.result.moves_used)
 					stats.scores_on_win.append(session.score.score)
+					stats.chains_on_win.append(session.score.best_chain)
 				stats.stars[int(session.result.get("stars", 0))] += 1
 				stats.scores.append(session.score.score)
 			total_violations += stats.violations

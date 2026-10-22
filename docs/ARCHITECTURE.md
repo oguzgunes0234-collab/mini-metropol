@@ -7,36 +7,54 @@ Godot 4.7 + GDScript. Dikey ekran, 1080×1920 tasarım çözünürlüğü,
 
 ```
 scenes/main.tscn
-└── Game (scripts/game/game.gd)          Ekran: dokunma girdisi, yerleşim, arayüz, efektler
-    ├── Board (board.gd)                  Fizik dünyası: duvarlar, binalar, birleşme, tehlike çizgisi
-    │   ├── Walls (StaticBody2D)
-    │   ├── Buildings/ Building×n (building.gd, RigidBody2D)
-    │   ├── Dropper (dropper.gd)          Nişan ve bırakılacak binanın çizimi
-    │   └── Effects (effects.gd)          Birleşme halkası, puan yazısı
-    ├── Session (game_session.gd)         Oturum kuralları: sıra, hamle, puan, oyun sonu, anlık görüntü
-    └── Hud (hud.gd, CanvasLayer)         Puan, sıradaki bina, paneller
+└── App (scripts/ui/app.gd)                Ekran geçişleri, bölüm kataloğu, oyuncu ilerlemesi
+    ├── LevelSelect (ui/level_select.gd)   Bölüm listesi: yıldızlar, kilitler, serbest oyun
+    └── GameScreen (game/game.gd)          Oyun ekranı: girdi, yerleşim, paneller, efektler
+        ├── Board (board.gd)               Fizik dünyası: duvarlar, engeller, binalar, birleşme, tehlike
+        │   ├── Walls (StaticBody2D)       Duvarlar + güvenlik tavanı + bölüm engelleri
+        │   ├── Buildings/ Building×n      (building.gd, RigidBody2D)
+        │   ├── Dropper (dropper.gd)       Nişan ve bırakılacak binanın çizimi
+        │   └── Effects (effects.gd)       Birleşme halkası, puan yazısı
+        ├── Session (game_session.gd)      Oturum kuralları: sıra, hamle, puan, hedef, sonuç, anlık görüntü
+        └── Hud (hud.gd, CanvasLayer)      Hamle, puan, sıradaki, hedef rozetleri, giriş/duraklatma/sonuç
 
 scripts/core/   Ekrandan bağımsız, birim testli kurallar
     game_data.gd       JSON verilerini yükler ve doğrular
+    level_catalog.gd   Bölümleri doğrular; bölüme özel kurallarla GameData üretir
+    level_goals.gd     Hedef ilerlemesi ve yıldız hesabı
     merge_resolver.gd  Hangi çiftler birleşir? (tek merkez, deterministik)
-    spawn_queue.gd     Tohumlu bina sırası, durum kaydı
+    spawn_queue.gd     Tohumlu bina sırası (+ öğretici sabit başlangıç), durum kaydı
     score_keeper.gd    Puan ve zincir bonusu
+    progress.gd        En iyi yıldız/puan, kilitler, başarısızlık sayacı (şimdilik bellekte)
+
+scripts/ui/ui_kit.gd   Ortak arayüz parçaları (düğme, panel, yıldız, hedef rozeti)
 ```
 
 Testler ve simülasyon `GameSession` + `Board` ikilisini arayüz olmadan kullanır;
 oyun ekranı da aynı ikiliyi kullanır. Böylece test edilen kural, oynanan kuraldır.
 
+### Oturum durumları
+
+```
+PLAYING ──(son hamle)──> SETTLING ──(binalar durdu, hedef yok)──> LOST "out_of_moves"
+   │                        │
+   │                        └──(hedefler tamamlandı)──> WON
+   ├──(hedefler tamamlandı)──────────────────────────> WON
+   └──(tehlike süresi / bırakma noktası dolu)────────> LOST "danger" / "no_room"
+```
+
 ### İstenen bileşenlerle eşleşme
 
 | İstenen | Karşılığı | Durum |
 |---|---|---|
-| GameManager | `GameSession` (kurallar) + `game.gd` (ekran akışı) | Var |
+| GameManager | `GameSession` (kurallar) + `GameScreen`/`App` (akış) | Var |
 | MergeManager | `MergeResolver` (karar) + `Board._resolve_merges` (uygulama) | Var |
 | Building | `Building` | Var |
 | SpawnController | `SpawnQueue` (sıra) + `Dropper` (nişan) | Var |
 | ScoreManager | `ScoreKeeper` | Var |
-| LevelManager | — | Aşama 3 |
-| SaveManager | — (anlık görüntü altyapısı hazır, JSON'a dönüşebilir) | Aşama 4 |
+| LevelManager | `LevelCatalog` (veri) + `LevelGoals` (hedef/yıldız) + `GameSession.start_level` | Var |
+| UIController | `App`, `LevelSelect`, `GameScreen`, `Hud`, `UiKit` | Var |
+| SaveManager | `Progress` (durum hazır, diske yazma yok) | Aşama 4 |
 | EconomyManager, BoosterManager | — | Aşama 5 |
 | ShopController, PurchaseService | — | Aşama 8–9 |
 
@@ -87,6 +105,7 @@ temizleyip bu kopyadan yeniden kurar. JSON'a çevrilip geri yüklenebilir
 |---|---|
 | `data/buildings.json` | 9 seviye: yarıçap, kütle, birleşme puanı, renkler, ad anahtarı |
 | `data/rules.json` | Alan boyutu, fizik, bırakma, birleşme, son seviye, oyun sonu ayarları |
+| `data/levels.json` | Bölümler (bkz. [LEVELS.md](LEVELS.md)) |
 | `i18n/strings.csv` | Türkçe ve İngilizce metinler |
 
 Veri hatalıysa oyun başlamaz ve hatayı ekranda gösterir. Tüm alanlar
@@ -95,5 +114,5 @@ Veri hatalıysa oyun başlamaz ve hatayı ekranda gösterir. Tüm alanlar
 ## Koordinatlar ve yerleşim
 
 `Board` içinde (0,0) arsanın sol üst köşesi, y aşağı doğru artar. Arsa
-900×1280. İçerik 1920 yüksekliğe göre dizilir; daha uzun telefonlarda dikey,
+varsayılan 900×1280; bölümler daraltıp alçaltabilir. İçerik 1920 yüksekliğe göre dizilir; daha uzun telefonlarda dikey,
 tabletlerde yatay ortalanır. Mobilde üst güvenli alan (çentik) payı bırakılır.

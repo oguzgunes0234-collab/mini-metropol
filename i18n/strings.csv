@@ -64,14 +64,14 @@ LEVEL_1_06,Dar Sokak,Narrow Street
 LEVEL_1_07,Kayalık Arsa,Rocky Lot
 LEVEL_1_08,Apartman Sırası,Apartment Row
 LEVEL_1_09,Karma Plan,Mixed Plan
-LEVEL_1_10,Ofis Kulesi,Office Tower
+LEVEL_1_10,Büyük Çarşı,Grand Bazaar
 HINT_1_01,"Aynı binaları üst üste bırak: iki kulübe birleşip küçük eve dönüşür.","Drop matching buildings onto each other: two huts merge into a cottage."
 HINT_1_02,"Sağ üstteki Sıradaki kutusuna bak; bir sonraki binayı ona göre planla.","Watch the Next box at the top right and plan your next drop."
 HINT_1_03,"Küçük binaları bir köşede topla; büyükler ortada yer bulur.","Gather small buildings in a corner so bigger ones have room."
 HINT_1_04,"Ortadaki kulübenin üstüne bir kulübe bırak: yeni ev alttakiyle de birleşir. Buna zincir denir.","Drop a hut on the middle hut: the new cottage merges with the one below. That is a chain."
 HINT_1_05,"Zincirler daha fazla puan verir. Birleşmeleri arka arkaya dizmeye çalış.","Chains score more. Line up merges so they trigger one after another."
 HINT_1_06,"Arsa dar! Binaları yan yana değil, üst üste düşün.","The lot is narrow! Think in stacks, not rows."
-HINT_1_07,"Kayalar yer kaplar ve binaları saptırır. Boşlukları akıllıca kullan.","Rocks take up space and deflect buildings. Use the gaps wisely."
-HINT_1_08,"İki apartman için alanı düzenli tut; büyük binaları bir kenarda topla.","Keep the lot tidy for two apartments; gather big buildings on one side."
-HINT_1_09,"Üç hedefin hepsini tamamla: apartman, puan ve üçlü zincir.","Complete all three goals: an apartment, the score and a triple chain."
-HINT_1_10,"Bariyer arsayı ikiye böler. Hangi tarafta büyüteceğine karar ver.","The barrier splits the lot. Decide which side you will grow on."
+HINT_1_07,"Kayalar yer kaplar ve binaları saptırır; arsa da alçak. Büyük binaları kayaların arasındaki boşlukta topla.","Rocks take up space and deflect buildings, and the lot is low. Gather big buildings in the gap between the rocks."
+HINT_1_08,"Arsa dar ve iki apartman lazım. Birini bir kenarda tamamla, ikincisini öbür yanda kur.","The lot is narrow and you need two apartments. Finish one on one side, build the second on the other."
+HINT_1_09,"Arsa hem dar hem alçak. Ofis Binası kurarken en az bir kez zincir yap: aynı binayı, birleşince oluşacak binanın komşusuna bırak.","The lot is narrow and low. Build an Office and make at least one chain: drop onto a pair whose result will touch its twin."
+HINT_1_10,"Ticaret Merkezi için iki Ofis Binası gerekir. Arsa dar: büyük binaları bir kenarda topla, küçükleri öbür yanda birleştir.","A Shopping Center needs two Office Buildings. The lot is narrow: keep big buildings on one side and merge small ones on the other."
