@@ -7,7 +7,7 @@ cd "$(dirname "$0")/.."
 GODOT="${GODOT:-godot}"
 mkdir -p reports && touch reports/.gdignore  # Godot bu klasörü içe aktarmasın
 "$GODOT" --headless --path . --import >/dev/null 2>&1
-"$GODOT" --headless --path . --fixed-fps 60 -s res://tools/validate_levels.gd -- "$@" 2>&1 | tee reports/levels.log
+"$GODOT" --headless --path . --fixed-fps 120 -s res://tools/validate_levels.gd -- "$@" 2>&1 | tee reports/levels.log
 status=${PIPESTATUS[0]}
 if grep -qE "SCRIPT ERROR|^ERROR:" reports/levels.log; then
   echo "!!! Betik hatası bulundu"; grep -nE "SCRIPT ERROR|^ERROR:" reports/levels.log | head; status=1

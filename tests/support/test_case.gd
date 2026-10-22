@@ -32,14 +32,20 @@ func add_node(n: Node) -> Node:
 	return n
 
 
+## Testlerde süreler 60 Hz kare cinsinden yazılır (60 = 1 saniye). Fizik
+## adım sıklığı farklıysa (project.godot) gerçek adım sayısına çevrilir.
+func steps(frames_at_60: int) -> int:
+	return ceili(frames_at_60 * Engine.physics_ticks_per_second / 60.0)
+
+
 func physics_frames(count: int) -> void:
-	for i in count:
+	for i in steps(count):
 		await tree.physics_frame
 
 
-## Fizik karelerini ilerletir ve her karede tutarlılık denetimi yapar.
+## Fizik adımlarını ilerletir ve her adımda tutarlılık denetimi yapar.
 func run_checked(session: GameSession, inv: Invariants, count: int) -> void:
-	for i in count:
+	for i in steps(count):
 		await tree.physics_frame
 		inv.check(session)
 

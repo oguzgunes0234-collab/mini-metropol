@@ -4,7 +4,7 @@
 
 ```sh
 tools/setup_env.sh        # Godot 4.7.2 ve ekran görüntüsü araçlarını kurar (bir kez)
-tools/run_tests.sh        # 100 birim + entegrasyon testi (~8 sn)
+tools/run_tests.sh        # 102 birim + entegrasyon testi (~14 sn)
 tools/run_tests.sh merge  # adında "merge" geçen testler
 tools/run_sim.sh 5000     # iki botla 2×5000 bırakmalık stres simülasyonu (~1,5 dk)
 tools/validate_levels.sh  # her bölümü 3 bot türüyle oynar (~10 dk), bkz. LEVELS.md
@@ -12,8 +12,9 @@ tools/lint.sh             # tüm GDScript dosyalarının sözdizimi/tür denetim
 tools/screenshots.sh      # farklı ekran oranlarında ekran görüntüleri (reports/shots/)
 ```
 
-Çıktılar `reports/` klasörüne yazılır (Git'e girmez). Testler `--fixed-fps 60`
-ile çalışır: her kare tam 1/60 sn fizik adımıdır ve gerçek zaman beklenmez.
+Çıktılar `reports/` klasörüne yazılır (Git'e girmez). Testler `--fixed-fps 120`
+ile çalışır: her kare tam bir fizik adımıdır (1/120 sn) ve gerçek zaman beklenmez.
+Testlerdeki süreler 60 Hz kare cinsinden yazılır (`physics_frames(60)` = 1 sn).
 
 GDScript çalışma hataları testi durdurmadığı için `run_tests.sh` çıktıda
 `SCRIPT ERROR` / `ERROR:` arar ve bulursa testleri başarısız sayar.
@@ -26,7 +27,7 @@ GDScript çalışma hataları testi durdurmadığı için `run_tests.sh` çıkt�
 | `tests/unit/test_merge_resolver.gd` | Tek çift; iki yönden gelen aynı çift; 3 bina → tek birleşme; hiçbir bina iki kez kullanılmıyor; sonuç girdi sırasından bağımsız; son seviye Anıt / "none" kuralı |
 | `tests/unit/test_spawn_queue.gd` | Aynı tohum → aynı sıra; ağırlıklar (20.000 çekiliş); sıfır ağırlık hiç gelmiyor; durum kaydı (JSON dâhil); önizleme |
 | `tests/unit/test_score_keeper.gd` | Puan veriden; zincir bonusu; bırakmada zincir sıfırlanır; bonus üst sınırı; Anıt bonusu; durum kaydı |
-| `tests/integration/test_board_physics.gd` | Gerçek fizikle: 2 bina → 1 üst seviye ve tek puan; 3 bina → 1 birleşme + 1 artan; 4 bina → seviye 3'e zincir; zincir bonusu; Anıt; "none" kuralı; duvar dibinde birleşme alanda kalır; bırakma noktası duvarlara sıkışır; aşırı hızla fırlatılan 24 bina kaçmaz; yeniden başlatma sonrası hiçbir gövde ve artık düğüm kalmaz |
+| `tests/integration/test_board_physics.gd` | Gerçek fizikle: zemine gömülen bina kurtarılır (kaybolmaz); oyun bittikten sonra da sınır denetimi; 2 bina → 1 üst seviye ve tek puan; 3 bina → 1 birleşme + 1 artan; 4 bina → seviye 3'e zincir; zincir bonusu; Anıt; "none" kuralı; duvar dibinde birleşme alanda kalır; bırakma noktası duvarlara sıkışır; aşırı hızla fırlatılan 24 bina kaçmaz; yeniden başlatma sonrası hiçbir gövde ve artık düğüm kalmaz |
 | `tests/integration/test_session.gd` | Bırakılan binalar sırayı izler, hamle sayılır; bekleme süresi; aynı tohumla yeniden başlatma; alan taşınca oyun biter (bir kez, tehlike süresi dolmadan değil); oyun bitince bırakma yok; dolu bırakma noktası oyunu bitirir; geçici engel bırakmayı bekletir; yeni bırakılan bina ve kısa taşma oyunu bitirmez; anlık görüntü ve JSON üzerinden geri yükleme tam aynı durumu verir |
 | `tests/unit/test_level_catalog.gd` | Varsayılan bölümler geçerli; her ad/ipucu TR ve EN çevrilmiş; bölüm kuralları genel kuralı bozmadan geçersiz kılar; hatalı bölüm verileri (tekrarlı kimlik, bilinmeyen kural, aralık dışı hedef, seviye 1 hedefi, yıldız sırası, hamle sınırını aşan yıldız, geçersiz açılma, alan dışı/değen başlangıç binası, bırakma alanındaki engel, geçersiz sıra) yakalanıyor |
 | `tests/unit/test_level_goals.gd` | Üretim hedefi yalnızca tam seviyeyi sayar; puan/zincir en iyi değeri kullanır; tüm hedefler gerekir; ilerleme hedefte sınırlanır; durum kaydı; yıldız hesabı |
@@ -49,30 +50,27 @@ Her fizik karesinden sonra:
 
 ## Son stres simülasyonu sonuçları
 
-`tools/run_sim.sh 5000` — Godot 4.7.2, bulut sunucusu (4 çekirdek), varsayılan veri.
+`tools/run_sim.sh 5000` — Godot 4.7.2, bulut sunucusu (4 çekirdek), 120 Hz fizik,
+dengeli kütleler, kurtarma açık.
 
 | | Rastgele bot | "Akıllı" bot |
 |---|---|---|
 | Bırakma | 5.000 | 5.000 |
-| Fizik karesi (her biri denetimli) | 169.630 | 170.849 |
-| Biten oyun (her biri temiz yeniden başlatma) | 43 | 36 |
-| Birleşme | 3.703 | 4.285 |
+| Fizik adımı (her biri denetimli) | 329.426 | 332.114 |
+| Biten oyun (her biri temiz yeniden başlatma) | 44 | 36 |
 | **Tutarlılık ihlali** | **0** | **0** |
 | **Yeniden başlatma sonrası kalan nesne** | **0** | **0** |
-| Oyun başına bırakma (ortanca / en az / en çok) | 112 / 81 / 178 | 141 / 72 / 201 |
-| Ulaşılan en yüksek seviye (oyun sayısı) | 6: 6, 7: 29, 8: 8 | 7: 14, 8: 17, 9: 5 |
-| En çok bina | 38 | 27 |
-| Kare süresi ort. / %99 / en kötü (ms) | 0,43 / 1,17 / 25,5 | 0,36 / 1,09 / 33,3 |
-| Duran binada >%25 gömülme (kare) | 6 | 3 |
+| Kurtarma (ezilen binayı geri itme) | 4 | 0 |
+| Oyun başına bırakma (ortanca / en az / en çok) | 106 / 82 / 204 | 137 / 88 / 188 |
+| Ulaşılan en yüksek seviye (oyun sayısı) | 6: 12, 7: 22, 8: 9, 9: 1 | 7: 9, 8: 23, 9: 4 |
+| Adım süresi ort. / %99 / en kötü (ms) | 0,29 / 0,94 / 20,6 | 0,24 / 0,83 / 13,1 |
+| Duran binada >%25 gömülme (adım) | 4 | 0 |
 
 Notlar:
-- Kare süresi fizik + oyun betikleridir, çizim hariç; **telefonda ölçülmedi**.
-  En kötü değerler, iki simülasyon aynı anda ve başka işlerle birlikte
-  çalışırken ölçüldü; işletim sistemi kaynaklı olabilir, doğrulanmadı.
-- Gömülme: 170.000 karede 3–6 karede, duran bir bina komşusunun/duvarın
-  içine yarıçapının %25'inden fazla girdi. Oyunu bozmuyor (ihlal yok) ama
-  görsel bir kusur olarak izleniyor. Fizik 120 Hz'de çalıştırılınca 0'a
-  iniyor (bkz. DECISIONS.md, karar 3).
+- Adım süresi fizik + oyun betikleridir, çizim hariç; **telefonda ölçülmedi**.
+  120 Hz'de saniyede 120 adım çalışır. En kötü değerler, birden fazla
+  simülasyon aynı anda çalışırken ölçüldü; nedeni doğrulanmadı.
+- Bölüm doğrulaması için bkz. [LEVELS.md](LEVELS.md).
 
 ## Sınırlar
 

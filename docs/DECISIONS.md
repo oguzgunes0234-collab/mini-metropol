@@ -21,10 +21,33 @@ Kare daha "şehir bloğu" görünüyor ama kalabalık yığında köşeler komş
 duvarlara gömülüyor. Seçilirse ek fizik çalışması gerekir.
 **Karar senin:** oynayıp karşılaştırdıktan sonra.
 
-## 3. Fizik 60 Hz
-Daire modunda 60 Hz yeterli (yukarıdaki tablo). 120 Hz gömülmeyi sıfırlıyor
-ama işlemci yükünü iki katına çıkarıyor. Telefonda ölçüm yapılınca yeniden
-değerlendirilecek (`project.godot` → `physics/common/physics_ticks_per_second`).
+## 3. Fizik 120 Hz (Aşama 3'te 60 Hz'den yükseltildi)
+Aşama 2'de 60 Hz yeterli görünüyordu. Aşama 3'teki dar/alçak arsalarda ağır
+yığınlar küçük binaları duvara ve zemine ezdi (karar 16). En kötü durumu
+üreten ölçümde (akıllı bot, 3000 bırakma):
+
+| Seçenek | İhlal | Kurtarma | Duran binada >%25 gömülme |
+|---|---|---|---|
+| 60 Hz | 18 | 71 | 50 kare |
+| 60 Hz, dengeli kütleler | 0 | 24 | 8 kare |
+| **120 Hz** | **0** | **2** | **0 kare** |
+
+Ancak 120 Hz de tek başına yetmedi: 1-07'de (alçak arsa + kayalar) sağ alt
+köşede ezilen kulübe hâlâ zemine gömülüyordu. Aynı bölümde 40 denemelik ölçüm:
+
+| Kütleler | Kurtarma | İhlal |
+|---|---|---|
+| İlk değerler (1 → 10,5) | açık | 26 (kurtarma döngüsü) |
+| İlk değerler | kapalı | 2 (bir bina kayboldu) |
+| **Dengeli (1 → 5)** | **açık** | **0** |
+| Dengeli | kapalı | 0 |
+
+Son karar: **120 Hz + dengeli kütleler + kurtarma (yedek)**. Kazanma
+oranları değişmedi. Bedeli: işlemci yükü ~2,5 kat (sunucuda saniyede ~30 ms).
+**Telefonda ölçülmedi.** Düşük güçlü cihazlarda sorun çıkarsa 60 Hz + dengeli
+kütleler denenecek (60 Hz'de 3000 bırakmada 0 ihlal, 24 kurtarma).
+Ayarlar: `project.godot` → `physics/common/physics_ticks_per_second`,
+`data/buildings.json` → `mass`.
 
 ## 4. Bina boyutları %25 büyütüldü
 Simülasyonla 5 varyant karşılaştırıldı (oyun başına ortanca bırakma):
@@ -96,3 +119,16 @@ durum yapısı (`Progress.get_state/set_state`) buna hazır ve JSON testi var.
 ## 15. Başarısızlık sonrası yalnızca ipucu
 Art arda 2. başarısızlıktan itibaren sonuç ekranında strateji ipucu çıkar.
 Satın alma, reklam veya "ek hamle al" önerisi gösterilmez.
+
+## 16. Ezilen binayı kurtarma, sınır denetimi hep açık
+Bölüm doğrulamasında (1-07, alçak arsa + kayalar) ağır yığının altındaki bir
+kulübe zemine itilip alanın dışına çıktı ve güvenlik ağı onu kaldırdı:
+oyuncunun binası kayboldu. İki değişiklik:
+- Duvara/zemine yarıçapının %30'undan fazla gömülen bina her fizik adımında
+  alana geri itilir, duvara doğru hızı sıfırlanır (`Board._rescue_deep_penetrations`,
+  `stats.rescues` ile sayılır). Bina kaybolmaz; nadiren küçük bir sıçrama görülebilir.
+- Sınır denetimi oyun bittikten sonra da çalışır (önceden duruyordu; sonuç
+  ekranının arkasında binalar alandan düşebiliyordu).
+Kalıcı çözüm adayı: Rapier 2D fizik eklentisi (yığınlarda daha kararlı).
+Ancak mobil derleme karmaşıklığı nedeniyle ancak gerçek cihaz testinde sorun
+görülürse değerlendirilecek.

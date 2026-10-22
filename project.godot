@@ -36,7 +36,7 @@ locale/fallback="en"
 
 [physics]
 
-common/physics_ticks_per_second=60
+common/physics_ticks_per_second=120
 2d/default_gravity=980.0
 
 [rendering]

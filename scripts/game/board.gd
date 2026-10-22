@@ -17,6 +17,11 @@ enum Room { FREE, BLOCKED_TEMP, FULL }
 
 ## Bırakma noktasını engelleyen bina bu hızdan yavaşsa "yerleşmiş" sayılır.
 const SETTLED_SPEED := 160.0
+## Duvara/zemine yarıçapın bu oranından fazla gömülen bina geri itilir.
+const RESCUE_DEPTH := 0.3
+
+## Yalnızca fizik deneyleri için (tools/simulate.gd --no_rescue).
+static var rescue_enabled := true
 
 var data: GameData
 var width := 0.0
@@ -213,10 +218,13 @@ func _physics_process(delta: float) -> void:
 	sim_time += delta
 	for b in buildings:
 		b.keep_upright()
+	# Sınır güvenliği oyun bittikten sonra da çalışır (sonuç ekranının arkasında
+	# binalar alandan düşmesin).
+	_rescue_deep_penetrations()
+	_enforce_bounds()
 	if not active:
 		return
 	_resolve_merges()
-	_enforce_bounds()
 	_update_danger(delta)
 
 
@@ -270,7 +278,39 @@ func _remove(b: Building) -> void:
 	b.queue_free()
 
 
-## Güvenlik ağı: duvarlara rağmen alan dışına çıkan bina olursa kaydedilir ve kaldırılır.
+## Kurtarma: ağır bir yığının altında ezilen bina duvara/zemine yarıçapının
+## RESCUE_DEPTH katından fazla gömülürse alana geri itilir ve duvara doğru
+## hızı sıfırlanır. Godot'nun 2D fizik çözücüsü büyük kütle farkı olan
+## yığınlarda bunu nadiren yaşatıyor (bkz. docs/DECISIONS.md, karar 16);
+## bu düzeltme binanın kaybolmasını önler.
+func _rescue_deep_penetrations() -> void:
+	if not rescue_enabled:
+		return
+	for b in buildings:
+		var r := b.current_radius()
+		var limit := r * (1.0 - RESCUE_DEPTH)
+		var p := b.position
+		var v := b.linear_velocity
+		var fixed := false
+		if p.x < limit:
+			p.x = r
+			v.x = maxf(v.x, 0.0)
+			fixed = true
+		elif p.x > width - limit:
+			p.x = width - r
+			v.x = minf(v.x, 0.0)
+			fixed = true
+		if p.y > height - limit:
+			p.y = height - r
+			v.y = minf(v.y, 0.0)
+			fixed = true
+		if fixed:
+			stats.rescues += 1
+			b.position = p
+			b.linear_velocity = v
+
+
+## Son güvenlik ağı: alan dışına çıkan bina olursa kaydedilir ve kaldırılır.
 ## Normal oyunda hiç tetiklenmemeli; testler bu sayacın 0 kaldığını doğrular.
 func _enforce_bounds() -> void:
 	var escaped: Array[Building] = []
@@ -339,7 +379,9 @@ func restore_state(s: Dictionary) -> void:
 	is_game_over = bool(s.is_game_over)
 	game_over_reason = String(s.get("game_over_reason", ""))
 	active = not is_game_over
-	stats = s.stats.duplicate()
+	_reset_stats()
+	for key in s.stats:
+		stats[key] = s.stats[key]
 	_set_danger_ratio(clampf(danger_time / _danger_limit, 0.0, 1.0))
 
 
@@ -353,6 +395,7 @@ func _reset_stats() -> void:
 		"landmark_value": 0,
 		"out_of_bounds": 0,
 		"lost_value": 0,
+		"rescues": 0,
 	}
 
 

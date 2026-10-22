@@ -4,7 +4,7 @@ extends SceneTree
 ## oyun bitince yeni oyun başlar. Sonuç JSON raporu olarak yazılır.
 ##
 ## Kullanım:
-##   godot --headless --path . --fixed-fps 60 -s res://tools/simulate.gd -- \
+##   godot --headless --path . --fixed-fps 120 -s res://tools/simulate.gd -- \
 ##         --drops=10000 --seed=1 --bot=random --out=reports/sim.json
 ##
 ## Not: Fizik motoru her makinede birebir aynı sonucu vermez; bu yüzden
@@ -19,6 +19,8 @@ func _initialize() -> void:
 		if arg.begins_with("--") and arg.contains("="):
 			var kv := arg.substr(2).split("=", true, 1)
 			_opts[kv[0]] = kv[1]
+		elif arg.begins_with("--"):
+			_opts[arg.substr(2)] = true
 	_run.call_deferred()
 
 
@@ -31,6 +33,8 @@ func _run() -> void:
 	# --ticks: fizik adım sıklığı denemesi (komut satırında --fixed-fps aynı değer verilmeli).
 	if _opts.has("ticks"):
 		Engine.physics_ticks_per_second = int(_opts.ticks)
+	if _opts.has("no_rescue"):
+		Board.rescue_enabled = false
 	var target := int(_opts.drops)
 	var seed_value := int(_opts.seed)
 	var bot := SimBot.new(SimBot.kind_from_name(String(_opts.bot)), seed_value)
@@ -82,6 +86,7 @@ func _run() -> void:
 			level_reached[top] = level_reached.get(top, 0) + 1
 			for v in inv.violations:
 				all_violations.append("oyun %d: %s" % [games.size(), v])
+			_rescues += int(board.stats.rescues)
 			game_seed += 1
 			session.start(game_seed)
 			inv.reset(true)
@@ -112,7 +117,7 @@ func _run() -> void:
 		"seed": seed_value,
 		"drops": drops,
 		"frames": frames,
-		"simulated_seconds": snappedf(frames / 60.0, 0.1),
+		"simulated_seconds": snappedf(frames / float(Engine.physics_ticks_per_second), 0.1),
 		"wall_seconds": snappedf((Time.get_ticks_msec() - started) / 1000.0, 0.1),
 		"games_finished": games.size(),
 		"merges": total_merges,
@@ -124,6 +129,7 @@ func _run() -> void:
 		"violation_samples": all_violations.slice(0, 20),
 		"reset_leftovers": reset_leftovers,
 		"max_bodies": max_bodies,
+		"rescues": _rescues,
 		"penetration_max": snappedf(_pen_max, 0.001),
 		"penetration_frames_over_25pct": _pen_deep_frames,
 		"penetration_resting_max": snappedf(_pen_resting_max, 0.001),
@@ -142,6 +148,7 @@ func _run() -> void:
 	quit(0 if all_violations.is_empty() and reset_leftovers == 0 else 1)
 
 
+var _rescues := 0
 var _pen_max := 0.0
 var _pen_resting_max := 0.0
 var _pen_deep_frames := 0

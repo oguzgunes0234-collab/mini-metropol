@@ -1,7 +1,7 @@
 extends SceneTree
 ## Test çalıştırıcı. Kullanım (proje klasöründe):
-##   godot --headless --path . --fixed-fps 60 -s res://tests/run_tests.gd [-- --filter=metin]
-## --fixed-fps: her kare tam 1/60 sn fizik adımı olur ve testler gerçek
+##   godot --headless --path . --fixed-fps 120 -s res://tests/run_tests.gd [-- --filter=metin]
+## --fixed-fps: her kare tam bir fizik adımı (1/120 sn) olur ve testler gerçek
 ## zamanı beklemeden hızlı çalışır.
 
 const TEST_DIRS := ["res://tests/unit", "res://tests/integration"]

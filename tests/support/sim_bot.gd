@@ -10,8 +10,8 @@ extends RefCounted
 
 enum Kind { RANDOM, GREEDY, PLANNER }
 
-## Planlayıcının her aday için ileriye baktığı fizik karesi sayısı.
-const PLAN_FRAMES := 90
+## Planlayıcının her aday için ileriye baktığı süre (bırakılan bina ~1,3 sn'de iner).
+const PLAN_SECONDS := 1.5
 const PLAN_GRID := 7
 
 var kind: Kind
@@ -82,7 +82,7 @@ func _plan(session: GameSession, tree: SceneTree) -> float:
 	for x in _candidates(session):
 		var v := -1.0e5
 		if session.try_drop(x):
-			for i in PLAN_FRAMES:
+			for i in ceili(PLAN_SECONDS * Engine.physics_ticks_per_second):
 				await tree.physics_frame
 				if session.is_finished():
 					break

@@ -4,13 +4,14 @@ extends SceneTree
 ## Her gerçek fizik karesinde tutarlılık denetimi de yapılır.
 ##
 ## Kullanım:
-##   godot --headless --path . --fixed-fps 60 -s res://tools/validate_levels.gd -- \
+##   godot --headless --path . --fixed-fps 120 -s res://tools/validate_levels.gd -- \
 ##         [--attempts=20] [--planner_attempts=6] [--bots=random,greedy,planner] \
 ##         [--levels=1-01,1-02] [--out=reports/levels.json] [--moves_override=200]
 ##
 ## --moves_override: hamle sınırını geçici olarak değiştirir. Çok büyük bir
-## değerle çalıştırınca botların hedefe kaç hamlede ulaştığının doğal
-## dağılımı çıkar; hamle sınırı bu dağılıma göre ayarlanır.
+## değerle kaba bir keşif yapılabilir. DİKKAT: sınırsız modda bot, zincirleme
+## birleşmeler sürerken bırakmaya devam eder; kullanılan hamle gerçek oyuna
+## göre fazla çıkar. Son ayar her zaman gerçek hamle sınırıyla yapılmalıdır.
 ##
 ## Önemli: Bir botun bir bölümü en az bir kez kazanması, bölümün bu makinede
 ## çözülebilir olduğunu gösterir. Fizik motoru farklı cihazlarda birebir aynı
@@ -27,13 +28,20 @@ func _initialize() -> void:
 		if arg.begins_with("--") and arg.contains("="):
 			var kv := arg.substr(2).split("=", true, 1)
 			_opts[kv[0]] = kv[1]
+		elif arg.begins_with("--"):
+			_opts[arg.substr(2)] = true
 	_run.call_deferred()
 
 
 func _run() -> void:
 	# --levels_file: tasarım denemeleri için başka bir bölüm dosyası.
-	var cat := LevelCatalog.load_default() if not _opts.has("levels_file") \
-		else LevelCatalog.load_from_file(String(_opts.levels_file), GameData.load_default())
+	# --buildings: kütle/boyut denemeleri için başka bir bina dosyası.
+	var base := GameData.load_default()
+	if _opts.has("buildings"):
+		base = GameData.load_from_files(String(_opts.buildings), GameData.RULES_PATH)
+	if _opts.has("no_rescue"):
+		Board.rescue_enabled = false
+	var cat := LevelCatalog.load_from_file(String(_opts.get("levels_file", LevelCatalog.LEVELS_PATH)), base)
 	if not cat.is_valid():
 		printerr("Bölüm verisi hatalı:\n", "\n".join(cat.errors))
 		quit(2)

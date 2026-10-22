@@ -11,7 +11,7 @@ mkdir -p reports && touch reports/.gdignore  # Godot bu klasörü içe aktarmas�
 "$GODOT" --headless --path . --import >/dev/null 2>&1
 
 run() {
-  "$GODOT" --headless --path . --fixed-fps 60 -s res://tools/simulate.gd -- \
+  "$GODOT" --headless --path . --fixed-fps 120 -s res://tools/simulate.gd -- \
     "--drops=$DROPS" "--seed=$2" "--bot=$1" "--out=reports/sim_$1.json" \
     > "reports/sim_$1.log" 2>&1
 }

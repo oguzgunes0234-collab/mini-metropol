@@ -12,7 +12,7 @@ mkdir -p reports && touch reports/.gdignore  # Godot bu klasörü içe aktarmas�
 ARGS=()
 if [ $# -gt 0 ]; then ARGS=(-- "--filter=$1"); fi
 
-"$GODOT" --headless --path . --fixed-fps 60 -s res://tests/run_tests.gd "${ARGS[@]}" 2>&1 | tee reports/test_output.txt
+"$GODOT" --headless --path . --fixed-fps 120 -s res://tests/run_tests.gd "${ARGS[@]}" 2>&1 | tee reports/test_output.txt
 status=${PIPESTATUS[0]}
 
 # GDScript çalışma hataları testi durdurmaz; çıktıda arayıp başarısız sayıyoruz.

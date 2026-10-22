@@ -58,7 +58,7 @@ func test_game_over_when_lot_overflows() -> void:
 	var s := _tower_session()
 	var finished_count := [0]
 	s.finished.connect(func(_result: Dictionary): finished_count[0] += 1)
-	var limit := 60 * 15
+	var limit := steps(60 * 15)
 	var frames := 0
 	while s.state == GameSession.State.PLAYING and frames < limit:
 		await tree.physics_frame
@@ -69,7 +69,7 @@ func test_game_over_when_lot_overflows() -> void:
 	assert_false(s.board.active)
 	assert_false(s.try_drop(450), "oyun bitince bırakma yapılamamalı")
 	# Tehlike süresi dolmadan bitmemeli.
-	var danger_frames := float(s.data.section("game_over").danger_time_sec) * 60.0
+	var danger_frames := float(s.data.section("game_over").danger_time_sec) * Engine.physics_ticks_per_second
 	assert_true(frames >= danger_frames, "oyun sonu %d karede geldi, en az %d olmalı" % [frames, danger_frames])
 
 

@@ -169,3 +169,30 @@ func test_restart_leaves_nothing_behind() -> void:
 	assert_eq(s.board.stats.merges, 0)
 	assert_eq(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT), orphans_before, "artık (orphan) düğüm kalmamalı")
 	assert_true(inv.ok(), "\n".join(inv.violations))
+
+
+func test_building_pushed_into_floor_is_rescued_not_lost() -> void:
+	var s := make_session()
+	var inv := Invariants.new()
+	var r := s.data.radius(1)
+	# Zemine yarıçapının %80'i kadar gömülmüş bina (ağır yığın altında ezilmeyi taklit eder)
+	_spawn(s, inv, 1, Vector2(450, H - r * 0.2))
+	_spawn(s, inv, 2, Vector2(s.data.radius(2) * 0.3, H - 300))
+	await run_checked(s, inv, 3)
+	assert_eq(s.board.building_count(), 2, "bina kaybolmamalı")
+	assert_eq(s.board.stats.out_of_bounds, 0)
+	assert_true(s.board.stats.rescues >= 2, "iki bina da geri itilmeli")
+	for b in s.board.buildings:
+		var rr := b.current_radius()
+		assert_true(b.position.y <= H - rr + 1.0 and b.position.x >= rr - 1.0, "bina alanın içinde: %s" % b.position)
+	assert_true(inv.ok(), "\n".join(inv.violations))
+
+
+func test_bounds_are_enforced_after_game_over() -> void:
+	var s := make_session()
+	var r := s.data.radius(1)
+	s.board.end_game("danger")
+	s.board.spawn(1, Vector2(450, H - r * 0.2), Vector2.ZERO, "test")
+	await physics_frames(3)
+	assert_eq(s.board.building_count(), 1)
+	assert_true(s.board.buildings[0].position.y <= H - r + 1.0, "oyun bitse de bina alanın içinde kalmalı")

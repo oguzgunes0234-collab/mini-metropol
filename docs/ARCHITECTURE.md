@@ -88,6 +88,9 @@ alan rahatlar. `rule: "none"` yapılırsa birleşmezler (test edildi).
 
 - Toplam hız ve yukarı doğru hız sınırı (`max_speed`, `max_up_speed`).
 - Bırakma noktasının çok üstünde görünmez tavan; binalar alandan kaçamaz.
+- Fizik 120 Hz: ağır yığınlarda küçük binaların ezilmesini önler.
+- Kurtarma: duvara/zemine yarıçapının %30'undan fazla gömülen bina geri itilir
+  (`stats.rescues`). Sınır denetimi oyun bittikten sonra da çalışır.
 - Yine de alan dışına çıkan bina olursa kaydedilir ve kaldırılır
   (`stats.out_of_bounds`); testler bu sayının 0 kaldığını doğrular.
 

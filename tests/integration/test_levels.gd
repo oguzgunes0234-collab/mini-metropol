@@ -6,7 +6,7 @@ const H := 1280.0
 
 func _wait_finished(s: GameSession, max_frames: int = 900) -> int:
 	var frames := 0
-	while not s.is_finished() and frames < max_frames:
+	while not s.is_finished() and frames < steps(max_frames):
 		await tree.physics_frame
 		frames += 1
 	return frames
@@ -94,7 +94,7 @@ func test_lose_when_out_of_moves_after_settling() -> void:
 	assert_eq(s.state, GameSession.State.LOST)
 	assert_eq(s.result.reason, "out_of_moves")
 	assert_eq(s.result.stars, 0)
-	assert_true(frames >= ceili(GameSession.SETTLE_HOLD_SEC * 60.0), "binaların durması beklenmeli")
+	assert_true(frames >= ceili(GameSession.SETTLE_HOLD_SEC * Engine.physics_ticks_per_second), "binaların durması beklenmeli")
 	assert_true(s.board.is_settled())
 
 

@@ -60,7 +60,25 @@ func get_state() -> Dictionary:
 	return {"best": best.duplicate(true), "fails": fails.duplicate(), "free_best": free_best}
 
 
+## Kayıttan yükler. Bozuk/eksik değerler atlanır ya da güvenli varsayılana döner.
 func set_state(s: Dictionary) -> void:
-	best = s.get("best", {}).duplicate(true)
-	fails = s.get("fails", {}).duplicate()
-	free_best = int(s.get("free_best", 0))
+	best.clear()
+	fails.clear()
+	var b = s.get("best", {})
+	if typeof(b) == TYPE_DICTIONARY:
+		for id in b:
+			var e = b[id]
+			if typeof(id) != TYPE_STRING or typeof(e) != TYPE_DICTIONARY:
+				continue
+			best[id] = {
+				"stars": clampi(int(e.get("stars", 0)) if GameData._is_number(e.get("stars")) else 0, 0, 3),
+				"score": maxi(0, int(e.get("score", 0)) if GameData._is_number(e.get("score")) else 0),
+				"completed": typeof(e.get("completed")) == TYPE_BOOL and e.completed,
+			}
+	var f = s.get("fails", {})
+	if typeof(f) == TYPE_DICTIONARY:
+		for id in f:
+			if typeof(id) == TYPE_STRING and GameData._is_number(f[id]):
+				fails[id] = maxi(0, int(f[id]))
+	var fb = s.get("free_best", 0)
+	free_best = maxi(0, int(fb)) if GameData._is_number(fb) else 0

@@ -53,7 +53,7 @@
       "mechanic": "bigger",
       "unlock": {"after": "1-02"},
       "seed": 103,
-      "moves": 9,
+      "moves": 8,
       "goals": [
         {"type": "build", "level": 4, "count": 1}
       ],
@@ -74,7 +74,7 @@
       "mechanic": "chain",
       "unlock": {"after": "1-03"},
       "seed": 104,
-      "moves": 9,
+      "moves": 8,
       "goals": [
         {"type": "chain", "value": 2},
         {"type": "build", "level": 4, "count": 1}
@@ -101,7 +101,7 @@
       "mechanic": "score",
       "unlock": {"after": "1-04"},
       "seed": 105,
-      "moves": 28,
+      "moves": 26,
       "goals": [
         {"type": "score", "value": 500}
       ],
@@ -122,13 +122,13 @@
       "mechanic": "narrow",
       "unlock": {"after": "1-05"},
       "seed": 106,
-      "moves": 18,
+      "moves": 16,
       "goals": [
         {"type": "build", "level": 5, "count": 1}
       ],
       "stars": [
         {"type": "complete"},
-        {"type": "moves_used_max", "value": 15},
+        {"type": "moves_used_max", "value": 14},
         {"type": "score", "value": 455}
       ],
       "rewards": {"coins_first": 40, "coins_repeat": 5},
@@ -143,7 +143,7 @@
       "mechanic": "obstacle",
       "unlock": {"after": "1-06"},
       "seed": 509,
-      "moves": 36,
+      "moves": 35,
       "goals": [
         {"type": "build", "level": 6, "count": 1}
       ],
@@ -168,7 +168,7 @@
       "mechanic": "narrow_plan",
       "unlock": {"after": "1-07"},
       "seed": 508,
-      "moves": 23,
+      "moves": 22,
       "goals": [
         {"type": "build", "level": 5, "count": 2}
       ],
@@ -189,14 +189,14 @@
       "mechanic": "combo",
       "unlock": {"after": "1-08"},
       "seed": 504,
-      "moves": 29,
+      "moves": 25,
       "goals": [
         {"type": "build", "level": 6, "count": 1},
         {"type": "chain", "value": 2}
       ],
       "stars": [
         {"type": "complete"},
-        {"type": "moves_used_max", "value": 25},
+        {"type": "moves_used_max", "value": 23},
         {"type": "score", "value": 1100}
       ],
       "rewards": {"coins_first": 50, "coins_repeat": 5},
