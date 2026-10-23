@@ -101,8 +101,9 @@ alan rahatlar. `rule: "none"` yapılırsa birleşmezler (test edildi).
 - Bırakma noktasının çok üstünde görünmez tavan; binalar alandan kaçamaz.
 - Fizik 120 Hz, 32 çözücü yinelemesi, dengeli kütleler: ağır yığınlarda küçük
   binaların ezilmesini önler (karar 3 ve 16).
-- Son çare kurtarma: merkezi duvar/zemin çizgisini geçen bina sınıra geri
-  konur (`stats.rescues`). Sınır denetimi oyun bittikten sonra da çalışır.
+- Son çare kurtarma: merkezi duvar/zemin çizgisini geçen bina alanın içindeki
+  en yakın boş yere konur: sınırın hemen içi, doluysa aynı sütunda yukarısı
+  (`stats.rescues`, karar 26). Sınır denetimi oyun bittikten sonra da çalışır.
 - Yine de alan dışına çıkan bina olursa kaydedilir ve kaldırılır
   (`stats.out_of_bounds`); testler bu sayının 0 kaldığını doğrular.
 

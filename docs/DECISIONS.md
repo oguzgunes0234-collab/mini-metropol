@@ -199,3 +199,20 @@ Alanın altındaki boşluk 110'dan 148 tasarım birimine çıktı; çubuk düğm
 112 birim yüksekliğinde (iPhone SE'de ~40 pt; Apple'ın önerisi 44 pt). Daha
 yüksek düğme, 16:9 ekranlarda bırakıcıyı hedef rozetlerinin altına
 iterdi. Aşama 6'daki tasarım geçişinde yeniden ele alınacak.
+
+## 26. Kurtarma binayı en yakın boş yere koyar
+Güçlendiricilerle oyunlar uzayınca, 2-09'da (kayalı) bir denemede duvara
+itilen bina 2.531 kez "kurtarıldı": sınırın hemen içine konuyor, orası dolu
+olduğu için yığın onu her karede yeniden duvara itiyordu (döngü). Kayıtlarla
+kök neden bulundu: kayanın altındaki dar cebe düşen iki bina birleşip oraya
+sığmayan büyük bir bina oluşturuyor. Kaya, duvar ve köşedeki küçük bina
+arasında yer olmadığı için büyük bina titriyor ve sonunda küçük binayı tek
+adımda duvarın içine itiyor. (Uyuyan gövde varsayımı denendi ve yanlış çıktı.)
+
+Düzeltme: kurtarılan bina, sınırın içi doluysa aynı sütunda yukarı doğru ilk
+boş yere konur ve oradan düşer. Aynı senaryoda döngü kalktı (olay başına 1
+kurtarma). Kalan durum: nadiren bir kare (1/120 sn) boyunca binanın merkezi
+duvarın içinde görülebilir, sonraki karede yukarıya alınır; bina kaybolmaz.
+Kalıcı çözüm adayları: kayaların duvara uzaklığını değiştirmek (cebe küçük
+binaların düşmemesi) ya da birleşmede yeni binanın sığıp sığmadığına bakmak.
+Gerçek cihaz testinde fark edilirse ele alınacak.
