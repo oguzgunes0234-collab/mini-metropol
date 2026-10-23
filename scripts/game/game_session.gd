@@ -1,8 +1,10 @@
 class_name GameSession
 extends Node
 ## Bir oyun oturumunun kuralları: bırakma, sıradaki bina, hamle sayısı, puan,
-## bölüm hedefleri, kazanma/kaybetme ve anlık görüntü (geri al için).
-## Arayüz içermez; oyun ekranı, testler ve simülasyon aynı mantığı kullanır.
+## bölüm hedefleri, kazanma/kaybetme, anlık görüntü ve güçlendirici etkileri
+## (geri al, değiştir, vinç, temizle, ek hamle). Arayüz içermez; oyun ekranı,
+## testler ve simülasyon aynı mantığı kullanır. Güçlendiricilerin envanter ve
+## kullanım sınırları BoosterManager'dadır; burada yalnızca etkiler vardır.
 ##
 ## İki kip vardır:
 ## - Bölüm (start_level): hedefler, hamle sınırı ve yıldızlar.
@@ -13,6 +15,13 @@ signal queue_changed(current: int, upcoming: Array[int])
 signal scored(points: int, total: int, info: Dictionary)
 signal goals_changed
 signal state_changed(state: State)
+signal moves_changed(used: int, limit: int)
+## Anlık görüntü geri yüklendi (geri al): alan, puan, hedefler ve hamle değişti.
+signal restored
+## "Temizle": kaldırılan binalar [{level, position}].
+signal cleared(removed: Array[Dictionary])
+## "Vinç": alınan binanın seviyesi ve eski konumu.
+signal lifted(level: int, position: Vector2)
 ## result: won, reason, score, moves_used, moves_limit, best_chain, stars,
 ## star_flags, goals (özet), level_id
 signal finished(result: Dictionary)
@@ -41,6 +50,14 @@ var result: Dictionary = {}
 ## Testler ve simülasyon için: her puan olayını kaydet.
 var record_events := false
 var event_log: Array[Dictionary] = []
+## Her geri yüklemede artar (tutarlılık denetimi olay kaydını yeniden okur).
+var log_epoch := 0
+## "Vinç" ile alınıp henüz bırakılmamış binanın seviyesi (0: yok). Varken
+## sıradaki bina odur; bırakılması hamle harcamaz.
+var held_level := 0
+
+## Son bırakmadan hemen önceki anlık görüntü (geri al için; tek adım).
+var _undo: Dictionary = {}
 
 var _cooldown := 0.0
 var _settle_hold := 0.0
@@ -88,17 +105,30 @@ func _begin(p_data: GameData, p_seed: int, goal_defs: Array, limit: int, sequenc
 	event_log.clear()
 	_settle_hold = 0.0
 	_settle_elapsed = 0.0
+	held_level = 0
+	_undo = {}
 	_set_state(State.PLAYING)
-	queue_changed.emit(queue.current(), queue.upcoming())
+	_emit_queue()
 	goals_changed.emit()
+	moves_changed.emit(moves, moves_limit)
 
 
 func can_drop() -> bool:
 	return state == State.PLAYING and cooldown_left <= 0.0
 
 
+## Şimdi bırakılacak bina (vinçle alınmış bina varsa o).
 func current_level() -> int:
-	return queue.current()
+	return held_level if held_level > 0 else queue.current()
+
+
+## Önizlemede gösterilecek sonraki binalar.
+func upcoming_levels() -> Array[int]:
+	if held_level > 0:
+		var list: Array[int] = [queue.current()]
+		list.append_array(queue.upcoming())
+		return list
+	return queue.upcoming()
 
 
 ## Kalan hamle (serbest kipte -1).
@@ -117,20 +147,29 @@ func is_finished() -> bool:
 func try_drop(x: float) -> bool:
 	if not can_drop():
 		return false
-	match board.room_at(queue.current(), x):
+	match board.room_at(current_level(), x):
 		Board.Room.FULL:
 			board.end_game("no_room")
 			return false
 		Board.Room.BLOCKED_TEMP:
 			return false
-	var lvl := queue.advance()
+	var snapshot := capture_snapshot()
+	var from_hand := held_level > 0
+	var lvl: int
+	if from_hand:
+		lvl = held_level
+		held_level = 0
+	else:
+		lvl = queue.advance()
+		moves += 1
+	_undo = snapshot
 	score.on_drop()
 	var b := board.drop(lvl, x)
-	moves += 1
 	cooldown_left = _cooldown
 	dropped.emit(lvl, b)
-	queue_changed.emit(queue.current(), queue.upcoming())
-	if moves_limit > 0 and moves >= moves_limit:
+	_emit_queue()
+	moves_changed.emit(moves, moves_limit)
+	if not from_hand and moves_limit > 0 and moves >= moves_limit:
 		# Son hamle: zincirlerin bitmesi beklenir, sonra sonuç verilir.
 		_set_state(State.SETTLING)
 	return true
@@ -197,6 +236,98 @@ func _finish(won: bool, reason: String) -> void:
 	finished.emit(result)
 
 
+# --- Güçlendirici etkileri ---
+# Her etkinin can_* kontrolü vardır; etki yalnızca kontrol geçerse uygulanır
+# ve true döner. Alanı veya sırayı değiştiren etkiler geri alma adımını siler
+# (geri al yalnızca son bırakmayı geri alır; araya giren etkiyi bozmaz).
+
+## Geri al: son bırakmadan hemen önceki duruma döner (alan, puan, hedefler,
+## sıra, hamle). Ek hamleler korunur. Oyun bittikten sonra kullanılamaz.
+func can_undo() -> bool:
+	return not _undo.is_empty() and (state == State.PLAYING or state == State.SETTLING)
+
+
+func undo() -> bool:
+	if not can_undo():
+		return false
+	restore_snapshot(_undo)
+	return true
+
+
+## Değiştir: şimdiki binayla sıradakinin yerini değiştirir.
+func can_swap() -> bool:
+	return state == State.PLAYING and held_level == 0 and not queue.upcoming().is_empty() \
+		and queue.current() != queue.upcoming()[0]
+
+
+func swap() -> bool:
+	if not can_swap():
+		return false
+	queue.swap_next()
+	_undo = {}
+	_emit_queue()
+	return true
+
+
+## Ek hamle: hamle sınırını artırır. Son hamle yapılmış ve sonuç bekleniyorsa
+## (SETTLING) oyun devam eder.
+func can_add_moves() -> bool:
+	return moves_limit > 0 and (state == State.PLAYING or state == State.SETTLING)
+
+
+func add_moves(amount: int) -> bool:
+	if amount <= 0 or not can_add_moves():
+		return false
+	moves_limit += amount
+	if state == State.SETTLING:
+		_settle_hold = 0.0
+		_settle_elapsed = 0.0
+		_set_state(State.PLAYING)
+	moves_changed.emit(moves, moves_limit)
+	return true
+
+
+## Temizle: seviyesi max_level veya altındaki tüm binaları kaldırır (puan vermez).
+func can_clear(max_level: int) -> bool:
+	return state == State.PLAYING and board.count_up_to(max_level) > 0
+
+
+func clear_small(max_level: int) -> Array[Dictionary]:
+	var removed: Array[Dictionary] = []
+	if not can_clear(max_level):
+		return removed
+	removed = board.clear_small(max_level)
+	_undo = {}
+	cleared.emit(removed)
+	return removed
+
+
+## Vinç: alandaki bir binayı alır; bina sıradaki bina olur ve istenen yere
+## yeniden bırakılır. Yeniden bırakmak hamle harcamaz.
+func can_lift_any(max_level: int) -> bool:
+	return state == State.PLAYING and held_level == 0 and board.count_up_to(max_level) > 0
+
+
+func can_lift(b: Building, max_level: int) -> bool:
+	return state == State.PLAYING and held_level == 0 and b != null and is_instance_valid(b) \
+		and board.buildings.has(b) and b.level <= max_level
+
+
+func lift(b: Building, max_level: int) -> bool:
+	if not can_lift(b, max_level):
+		return false
+	var pos := b.position
+	held_level = board.lift(b)
+	_undo = {}
+	lifted.emit(held_level, pos)
+	_emit_queue()
+	return true
+
+
+func _emit_queue() -> void:
+	queue_changed.emit(current_level(), upcoming_levels())
+
+
 func _set_state(s: State) -> void:
 	if state != s or s == State.PLAYING:
 		state = s
@@ -214,6 +345,7 @@ func capture_snapshot() -> Dictionary:
 		"cooldown_left": cooldown_left,
 		"state": state,
 		"events": event_log.size(),
+		"held": held_level,
 	}
 
 
@@ -224,12 +356,18 @@ func restore_snapshot(s: Dictionary) -> void:
 	goals.set_state(s.goals)
 	queue.set_state(s.queue)
 	moves = int(s.moves)
+	held_level = int(s.get("held", 0))
 	cooldown_left = float(s.cooldown_left)
 	_settle_hold = 0.0
 	_settle_elapsed = 0.0
 	result = {}
 	# Geri alınan hamlenin puan olayları da geri alınır.
 	event_log.resize(mini(event_log.size(), int(s.get("events", event_log.size()))))
+	log_epoch += 1
+	# Geri al tek adımdır: geri yüklenen durumdan bir daha geri alınamaz.
+	_undo = {}
 	_set_state(int(s.state) as State)
-	queue_changed.emit(queue.current(), queue.upcoming())
+	_emit_queue()
 	goals_changed.emit()
+	moves_changed.emit(moves, moves_limit)
+	restored.emit()

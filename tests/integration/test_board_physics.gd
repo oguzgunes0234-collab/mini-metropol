@@ -188,6 +188,27 @@ func test_building_pushed_through_wall_is_rescued_not_lost() -> void:
 	assert_true(inv.ok(), "\n".join(inv.violations))
 
 
+func test_rescue_uses_free_spot_not_occupied_one() -> void:
+	# Sınırın hemen içi büyük bir binayla dolu: kurtarılan bina oraya konarsa
+	# yığın onu yeniden duvara iter (döngü). Bunun yerine yukarıdaki boş yere konur.
+	var s := make_session()
+	var inv := Invariants.new()
+	var big := s.data.radius(5)
+	var r := s.data.radius(1)
+	_spawn(s, inv, 5, Vector2(big, H - big))
+	var small := _spawn(s, inv, 1, Vector2(-r * 0.2, H - r))
+	s.board._rescue_deep_penetrations()
+	assert_eq(s.board.stats.rescues, 1)
+	var other: Building = s.board.buildings[0]
+	assert_true(small.position.distance_to(other.position) >= r + big - 1.0, "boş yere konmalı: %s" % small.position)
+	assert_near(small.position.x, r, 0.01, "duvarın hemen içinde, aynı sütunda")
+	assert_true(small.position.y < H - r, "yukarıda")
+	await run_checked(s, inv, 120)
+	assert_eq(s.board.building_count(), 2)
+	assert_true(s.board.stats.rescues <= 1, "döngü yok: %d kurtarma" % s.board.stats.rescues)
+	assert_true(inv.ok(), "\n".join(inv.violations))
+
+
 func test_shallow_penetration_is_left_to_physics() -> void:
 	var s := make_session()
 	var r := s.data.radius(1)

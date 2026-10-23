@@ -1,15 +1,24 @@
 {
   "version": 1,
-  "_note": "Ekonomi değerleri. Tümü BAŞLANGIÇ VARSAYIMIDIR: gerçek oyuncu verisi olmadan dengeli olduğu iddia edilmez. Bölüm ödülleri data/levels.json içindedir (rewards).",
+  "_note": "Ekonomi değerleri. Tümü BAŞLANGIÇ VARSAYIMIDIR: gerçek oyuncu verisi olmadan dengeli olduğu iddia edilmez. Bölüm ödülleri data/levels.json içindedir (rewards). Güçlendirici kuralları için bkz. docs/ECONOMY.md.",
   "start": { "coins": 100, "diamonds": 0 },
   "coins_per_new_star": 10,
   "star_milestones": [
     { "stars": 10, "coins": 50 },
-    { "stars": 20, "coins": 100 },
-    { "stars": 30, "coins": 150 },
-    { "stars": 45, "coins": 250 },
-    { "stars": 60, "coins": 400 },
-    { "stars": 75, "coins": 600 },
-    { "stars": 90, "coins": 1000 }
-  ]
+    { "stars": 20, "coins": 100, "boosters": { "extra_moves": 1 } },
+    { "stars": 30, "coins": 150, "diamonds": 5 },
+    { "stars": 45, "coins": 250, "boosters": { "crane": 1, "relieve": 1 } },
+    { "stars": 60, "coins": 400, "diamonds": 10 },
+    { "stars": 75, "coins": 600, "boosters": { "extra_moves": 2 } },
+    { "stars": 90, "coins": 1000, "diamonds": 20 }
+  ],
+  "_boosters_note": "price: tek adet fiyatı. per_level: bir bölüm denemesinde en fazla kullanım. unlock_after: bu bölüm tamamlanınca açılır. gift: açıldığında bir kez verilen ücretsiz adet.",
+  "inventory_cap": 99,
+  "boosters": {
+    "undo":        { "price": { "coins": 50 },  "per_level": 3, "unlock_after": "1-02", "gift": 3 },
+    "swap":        { "price": { "coins": 30 },  "per_level": 3, "unlock_after": "1-03", "gift": 2 },
+    "crane":       { "price": { "coins": 80 },  "per_level": 2, "unlock_after": "1-07", "gift": 2, "max_level": 6 },
+    "relieve":     { "price": { "coins": 100 }, "per_level": 1, "unlock_after": "1-09", "gift": 1, "max_level": 2 },
+    "extra_moves": { "price": { "coins": 120 }, "per_level": 2, "unlock_after": "1-05", "gift": 2, "amount": 5 }
+  }
 }

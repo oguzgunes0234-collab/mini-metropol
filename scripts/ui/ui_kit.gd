@@ -231,3 +231,107 @@ static func star_text(s: Dictionary) -> String:
 		"chain":
 			return TranslationServer.translate("STAR_CHAIN") % int(s.value)
 	return TranslationServer.translate("STAR_COMPLETE")
+
+
+# --- Güçlendiriciler ve elmas ---
+
+const BOOSTER_COLORS := {
+	"undo": Color("#3E7CB1"),
+	"swap": Color("#8E5DB0"),
+	"crane": Color("#E39B1F"),
+	"relieve": Color("#3E8E48"),
+	"extra_moves": Color("#F26419"),
+}
+
+
+static func booster_name(id: String) -> String:
+	return TranslationServer.translate("BOOSTER_" + id.to_upper())
+
+
+## Açıklama metni; etki ayarı (vinç/temizle seviyesi, ek hamle sayısı) yerine konur.
+static func booster_desc(id: String, def: Dictionary) -> String:
+	var t := TranslationServer.translate("BOOSTER_%s_DESC" % id.to_upper())
+	match id:
+		"crane", "relieve":
+			return t % int(def.get("max_level", 0))
+		"extra_moves":
+			return t % int(def.get("amount", 0))
+	return t
+
+
+## Güçlendirici simgesi (GEÇİCİ ÇİZİM): yuvarlak zemin üstünde basit bir işaret.
+## extra_amount: ek hamle simgesinde yazılacak sayı.
+static func draw_booster_icon(ci: CanvasItem, id: String, c: Vector2, r: float, extra_amount: int = 5) -> void:
+	var col: Color = BOOSTER_COLORS.get(id, INK)
+	ci.draw_circle(c, r, col, true, -1.0, true)
+	var w := maxf(3.0, r * 0.16)
+	var ink := PAPER
+	match id:
+		"undo":
+			# Saat yönünün tersine dönen ok
+			ci.draw_arc(c, r * 0.5, -PI * 0.85, PI * 0.55, 24, ink, w, true)
+			var tip := c + Vector2(cos(-PI * 0.85), sin(-PI * 0.85)) * r * 0.5
+			ci.draw_colored_polygon(PackedVector2Array([tip + Vector2(-r * 0.28, r * 0.02), tip + Vector2(r * 0.16, -r * 0.2), tip + Vector2(r * 0.12, r * 0.28)]), ink)
+		"swap":
+			# Karşılıklı iki ok
+			for k: int in [-1, 1]:
+				var y := c.y + k * r * 0.24
+				var dir := float(k)
+				ci.draw_line(Vector2(c.x - r * 0.45, y), Vector2(c.x + r * 0.45, y), ink, w, true)
+				var head := Vector2(c.x + dir * r * 0.5, y)
+				ci.draw_colored_polygon(PackedVector2Array([head, head + Vector2(-dir * r * 0.24, -r * 0.16), head + Vector2(-dir * r * 0.24, r * 0.16)]), ink)
+		"crane":
+			# Halat ve kanca
+			ci.draw_line(c + Vector2(0, -r * 0.62), c + Vector2(0, r * 0.08), ink, w, true)
+			ci.draw_arc(c + Vector2(-r * 0.16, r * 0.1), r * 0.24, 0.0, PI * 1.05, 16, ink, w, true)
+			ci.draw_rect(Rect2(c + Vector2(-r * 0.3, -r * 0.7), Vector2(r * 0.6, r * 0.14)), ink)
+		"relieve":
+			# Süpürge
+			ci.draw_line(c + Vector2(r * 0.45, -r * 0.55), c + Vector2(-r * 0.05, r * 0.1), ink, w, true)
+			ci.draw_colored_polygon(PackedVector2Array([
+				c + Vector2(-r * 0.15, r * 0.0), c + Vector2(r * 0.12, r * 0.22),
+				c + Vector2(-r * 0.2, r * 0.6), c + Vector2(-r * 0.6, r * 0.3)]), ink)
+		"extra_moves":
+			var font := ThemeDB.fallback_font
+			var fs := int(r * 0.9)
+			var t := "+%d" % extra_amount
+			var tw := font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+			ci.draw_string(font, c + Vector2(-tw * 0.5, fs * 0.35), t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, ink)
+
+
+## Bir güçlendirici simgesini çizen küçük denetim (panellerde ve ödül satırlarında).
+class BoosterIcon:
+	extends Control
+	var id := ""
+	var radius := 22.0
+	var amount := 5
+
+	func _init(p_id: String, p_radius: float = 22.0, p_amount: int = 5) -> void:
+		id = p_id
+		radius = p_radius
+		amount = p_amount
+		custom_minimum_size = Vector2(radius * 2.2, radius * 2.2)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		UiKit.draw_booster_icon(self, id, size * 0.5, radius, amount)
+
+
+static func draw_diamond(ci: CanvasItem, c: Vector2, r: float) -> void:
+	var pts := PackedVector2Array([c + Vector2(0, -r), c + Vector2(r * 0.8, -r * 0.2), c + Vector2(0, r), c + Vector2(-r * 0.8, -r * 0.2)])
+	ci.draw_colored_polygon(pts, Color("#4FB3D9"))
+	ci.draw_colored_polygon(PackedVector2Array([c + Vector2(0, -r), c + Vector2(r * 0.8, -r * 0.2), c + Vector2(0, -r * 0.05)]), Color("#9EDCF2"))
+
+
+## Elmas simgesi.
+class DiamondIcon:
+	extends Control
+	var radius := 22.0
+
+	func _init(p_radius: float = 22.0) -> void:
+		radius = p_radius
+		custom_minimum_size = Vector2(radius * 2.2, radius * 2.2)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		UiKit.draw_diamond(self, size * 0.5, radius)

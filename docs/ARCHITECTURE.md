@@ -14,9 +14,13 @@ scenes/main.tscn
         │   ├── Walls (StaticBody2D)       Duvarlar + güvenlik tavanı + bölüm engelleri
         │   ├── Buildings/ Building×n      (building.gd, RigidBody2D)
         │   ├── Dropper (dropper.gd)       Nişan ve bırakılacak binanın çizimi
-        │   └── Effects (effects.gd)       Birleşme halkası, puan yazısı
-        ├── Session (game_session.gd)      Oturum kuralları: sıra, hamle, puan, hedef, sonuç, anlık görüntü
-        └── Hud (hud.gd, CanvasLayer)      Hamle, puan, sıradaki, hedef rozetleri, giriş/duraklatma/sonuç
+        │   └── Effects (effects.gd)       Birleşme halkası, puan yazısı, vinç seçimi vurgusu
+        ├── Session (game_session.gd)      Oturum kuralları: sıra, hamle, puan, hedef, sonuç, anlık görüntü,
+        │                                  güçlendirici etkileri (geri al, değiştir, vinç, temizle, ek hamle)
+        ├── BoosterManager (booster_manager.gd, düğüm değil)
+        │                                  Güçlendirici kuralları: açık mı, bölüm sınırı, envanter, satın alma
+        └── Hud (hud.gd, CanvasLayer)      Hamle, puan, sıradaki, hedef rozetleri, güçlendirici çubuğu,
+                                           giriş/duraklatma/satın alma/sonuç panelleri, bilgi yazısı
 
 scripts/core/   Ekrandan bağımsız, birim testli kurallar
     game_data.gd       JSON verilerini yükler ve doğrular
@@ -27,8 +31,9 @@ scripts/core/   Ekrandan bağımsız, birim testli kurallar
     score_keeper.gd    Puan ve zincir bonusu
     progress.gd        En iyi yıldız/puan, tamamlanma, başarısızlık sayacı
     wallet.gd          Madeni para ve elmas; negatif bakiye olmaz, işlem kaydı
-    economy_data.gd    Ekonomi ayarları (data/economy.json) ve doğrulaması
-    player_profile.gd  İlerleme + cüzdan + ayarlar; bölüm sonu ödülleri tek yerden
+    economy_data.gd    Ekonomi ve güçlendirici ayarları (data/economy.json) ve doğrulaması
+    player_profile.gd  İlerleme + cüzdan + güçlendirici envanteri + ayarlar; ödüller ve
+                       satın alma tek yerden
     save_store.gd      Yerel kayıt: atomik yazma, yedek, sağlama, bozulmaya dayanıklı okuma
 
 scripts/ui/ui_kit.gd   Ortak arayüz parçaları (düğme, panel, yıldız, hedef rozeti)
@@ -41,7 +46,8 @@ oyun ekranı da aynı ikiliyi kullanır. Böylece test edilen kural, oynanan kur
 
 ```
 PLAYING ──(son hamle)──> SETTLING ──(binalar durdu, hedef yok)──> LOST "out_of_moves"
-   │                        │
+   ▲                        │
+   └──(geri al / ek hamle)──┤
    │                        └──(hedefler tamamlandı)──> WON
    ├──(hedefler tamamlandı)──────────────────────────> WON
    └──(tehlike süresi / bırakma noktası dolu)────────> LOST "danger" / "no_room"
@@ -59,8 +65,8 @@ PLAYING ──(son hamle)──> SETTLING ──(binalar durdu, hedef yok)──
 | LevelManager | `LevelCatalog` (veri) + `LevelGoals` (hedef/yıldız) + `GameSession.start_level` | Var |
 | UIController | `App`, `LevelMap`, `GameScreen`, `Hud`, `UiKit` | Var |
 | SaveManager | `SaveStore` + `PlayerProfile` | Var |
-| EconomyManager | `Wallet` + `EconomyData` + `PlayerProfile.apply_result` | Ödüller var; harcama Aşama 5 |
-| BoosterManager | — | Aşama 5 |
+| EconomyManager | `Wallet` + `EconomyData` + `PlayerProfile` (ödül, satın alma) | Var |
+| BoosterManager | `BoosterManager` (kurallar) + `GameSession` (etkiler) | Var |
 | ShopController, PurchaseService | — | Aşama 8–9 |
 
 ## Birleşme akışı
@@ -106,7 +112,28 @@ alan rahatlar. `rule: "none"` yapılırsa birleşmezler (test edildi).
 hızları, büyüme durumu), puanın, hamle sayısının ve bina sırasının (rastgele
 sayı üreteci durumu dâhil) tam kopyasını alır. `restore_snapshot()` alanı
 temizleyip bu kopyadan yeniden kurar. JSON'a çevrilip geri yüklenebilir
-(test edildi). Geri al güçlendiricisi (Aşama 5) bunun üzerine kurulacak.
+(test edildi).
+
+## Güçlendiriciler
+
+Etkiler `GameSession`'dadır (her birinin `can_*` kontrolü vardır); envanter,
+açılma, bölüm başı sınır ve satın alma `BoosterManager` + `PlayerProfile`'dadır.
+Bir güçlendirici yalnızca etkisi gerçekten uygulandıysa envanterden düşülür.
+
+| Güçlendirici | Etki | Ne zaman |
+|---|---|---|
+| Geri Al | Son bırakmadan hemen önce alınan anlık görüntüye döner (alan, puan, hedefler, sıra, hamle). Tek adımdır. Ek hamleler korunur. | Bölüm sürerken (son hamleden sonra sonuç gelmeden de) |
+| Değiştir | Şimdiki binayla sıradakinin yerini değiştirir | Bırakma sırasında; iki bina farklıysa |
+| Vinç | Dokunulan binayı (en fazla seviye 6) alandan alır; bina sıradaki olur, yeniden bırakmak hamle harcamaz | Bırakma sırasında; elde bina yokken |
+| Temizle | Seviye 1–2 binaların hepsini kaldırır, puan vermez | Bırakma sırasında; alanda küçük bina varken |
+| Ek Hamle | Hamle sınırına 5 ekler; son hamleden sonra oyunu sürdürür | Bölüm sürerken |
+
+Alanı veya sırayı değiştiren güçlendiriciler (değiştir, vinç, temizle) geri
+alma adımını siler: geri al yalnızca son bırakmayı geri alır, araya giren bir
+güçlendiriciyi bozmaz. Bölüm bitince (kazanma/kaybetme) hiçbir güçlendirici
+kullanılamaz; bu yüzden geri al ile ödül iki kez alınamaz. Kaldırılan ve
+vinçle alınan binaların değeri `Board.stats` içinde ayrı tutulur; tutarlılık
+denetimi (değer korunumu) bunları da hesaba katar.
 
 ## Veriler
 
@@ -115,6 +142,8 @@ temizleyip bu kopyadan yeniden kurar. JSON'a çevrilip geri yüklenebilir
 | `data/buildings.json` | 9 seviye: yarıçap, kütle, birleşme puanı, renkler, ad anahtarı |
 | `data/rules.json` | Alan boyutu, fizik, bırakma, birleşme, son seviye, oyun sonu ayarları |
 | `data/levels.json` | Bölümler (bkz. [LEVELS.md](LEVELS.md)) |
+| `data/regions.json` | Bölgeler ve kilit koşulları |
+| `data/economy.json` | Başlangıç bakiyesi, ödüller, eşikler, güçlendirici fiyat/sınır/açılma (bkz. [ECONOMY.md](ECONOMY.md)) |
 | `i18n/strings.csv` | Türkçe ve İngilizce metinler |
 
 Veri hatalıysa oyun başlamaz ve hatayı ekranda gösterir. Tüm alanlar

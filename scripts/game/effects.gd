@@ -1,12 +1,17 @@
 class_name Effects
 extends Node2D
-## Kısa görsel geri bildirimler: birleşme halkası ve puan yazısı.
+## Kısa görsel geri bildirimler: birleşme halkası, puan yazısı ve vinç
+## seçiminde alınabilecek binaların çevresindeki halkalar.
 ## Efektler fiziği etkilemez ve kısa sürede kendini siler.
 ## reduced_motion açıkken hareketli efektler sadeleşir.
 
 const MAX_ACTIVE := 24
 
 var reduced_motion := false
+
+## Vinç seçimi: vurgulanacak binalar.
+var _targets: Array[Building] = []
+var _time := 0.0
 
 
 class Ring:
@@ -56,3 +61,26 @@ func popup(pos: Vector2, text: String, color: Color, font_size: int = 44) -> voi
 		tw.tween_property(label, "position:y", label.position.y - 70.0, 0.75).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.tween_property(label, "modulate:a", 0.0, 0.35).set_delay(0.45)
 	tw.chain().tween_callback(label.queue_free)
+
+
+func _ready() -> void:
+	set_process(false)
+
+
+## Vinç seçimi sırasında alınabilecek binaları vurgular (boş liste: kapat).
+func set_pick_targets(list: Array[Building]) -> void:
+	_targets = list
+	set_process(not list.is_empty())
+	queue_redraw()
+
+
+func _process(delta: float) -> void:
+	_time += delta
+	queue_redraw()
+
+
+func _draw() -> void:
+	var pulse := 1.0 if reduced_motion else 0.6 + 0.4 * sin(_time * 6.0)
+	for b in _targets:
+		if is_instance_valid(b) and not b.consumed:
+			draw_arc(b.position, b.current_radius() + 10.0, 0.0, TAU, 48, Color(1.0, 0.55, 0.1, pulse), 7.0, true)

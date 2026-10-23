@@ -220,7 +220,7 @@
         {"type": "moves_used_max", "value": 38},
         {"type": "score", "value": 2500}
       ],
-      "rewards": {"coins_first": 60, "coins_repeat": 10},
+      "rewards": {"coins_first": 60, "coins_repeat": 10, "boosters": {"undo": 2, "extra_moves": 1}},
       "rules": {"board": {"width": 760}, "drop": {"spawn_levels": [1, 2, 3, 4], "spawn_weights": [40, 30, 20, 10]}}
     },
     {
@@ -339,7 +339,7 @@
         {"type": "moves_used_max", "value": 10},
         {"type": "score", "value": 750}
       ],
-      "rewards": {"coins_first": 50, "coins_repeat": 5},
+      "rewards": {"coins_first": 50, "coins_repeat": 5, "boosters": {"crane": 1}},
       "rules": {"board": {"width": 800}, "drop": {"spawn_levels": [1, 2, 3, 4], "spawn_weights": [40, 30, 20, 10]}},
       "layout": [
         {"level": 4, "x": 110, "y": 1178},
@@ -461,7 +461,7 @@
         {"type": "moves_used_max", "value": 42},
         {"type": "score", "value": 2900}
       ],
-      "rewards": {"coins_first": 80, "coins_repeat": 10},
+      "rewards": {"coins_first": 80, "coins_repeat": 10, "boosters": {"relieve": 1, "undo": 2}},
       "rules": {"board": {"width": 820, "height": 1150}, "drop": {"spawn_levels": [1, 2, 3, 4], "spawn_weights": [40, 30, 20, 10]}}
     },
     {
@@ -580,7 +580,7 @@
         {"type": "moves_used_max", "value": 20},
         {"type": "score", "value": 900}
       ],
-      "rewards": {"coins_first": 65, "coins_repeat": 5},
+      "rewards": {"coins_first": 65, "coins_repeat": 5, "boosters": {"swap": 2, "crane": 1}},
       "rules": {"drop": {"spawn_levels": [1, 2, 3, 4], "spawn_weights": [40, 30, 20, 10]}},
       "obstacles": [
         {"shape": "rect", "kind": "barrier", "x": 450, "y": 900, "w": 420, "h": 30, "rot": 15}
@@ -693,7 +693,7 @@
         {"type": "moves_used_max", "value": 40},
         {"type": "score", "value": 4500}
       ],
-      "rewards": {"coins_first": 120, "coins_repeat": 10},
+      "rewards": {"coins_first": 120, "coins_repeat": 10, "boosters": {"extra_moves": 2}},
       "rules": {"drop": {"spawn_levels": [1, 2, 3, 4, 5], "spawn_weights": [35, 28, 20, 12, 5]}}
     }
   ]

@@ -125,3 +125,129 @@ func test_corrupt_profile_state_is_sanitized() -> void:
 	assert_eq(p.setting("haptics"), true, "geçersiz ayar varsayılana döner")
 	assert_false(p.settings.has("bilinmeyen"))
 	assert_eq(p.milestones_claimed, [10] as Array[int])
+
+
+# --- Güçlendirici envanteri, satın alma, hediyeler ---
+
+## Varsayılan güçlendirici kurallarıyla, küçük eşikli bir test ekonomisi.
+func _booster_economy() -> EconomyData:
+	var d: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(EconomyData.PATH))
+	d.star_milestones = [{"stars": 3, "coins": 10, "diamonds": 2, "boosters": {"crane": 1}}]
+	return EconomyData.from_dict(d)
+
+
+func test_default_booster_unlock_levels_exist() -> void:
+	var e := EconomyData.load_default()
+	var cat := LevelCatalog.load_default()
+	for id in EconomyData.BOOSTER_IDS:
+		var after: String = e.boosters[id].unlock_after
+		assert_true(after == "" or not cat.get_level(after).is_empty(), "%s: %s bölümü yok" % [id, after])
+
+
+func test_booster_economy_validation() -> void:
+	var base: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(EconomyData.PATH))
+	var cases := {
+		"bilinmeyen kimlik": func(d): d.boosters.roket = d.boosters.undo,
+		"eksik güçlendirici": func(d): d.boosters.erase("swap"),
+		"geçersiz para birimi": func(d): d.boosters.undo.price = {"altın": 5},
+		"sıfır fiyat": func(d): d.boosters.undo.price = {"coins": 0},
+		"sıfır sınır": func(d): d.boosters.undo.per_level = 0,
+		"aralık dışı etki": func(d): d.boosters.extra_moves.amount = 50,
+		"eşikte bilinmeyen güçlendirici": func(d): d.star_milestones[0].boosters = {"roket": 1},
+		"envanter sınırı yok": func(d): d.erase("inventory_cap"),
+	}
+	for name in cases:
+		var d: Dictionary = base.duplicate(true)
+		cases[name].call(d)
+		assert_false(EconomyData.from_dict(d).is_valid(), name)
+
+
+func test_unlock_gift_is_given_once() -> void:
+	var e := _booster_economy()
+	var p := PlayerProfile.create_new(e)
+	assert_eq(p.booster_count("undo"), 0)
+	var after: String = e.boosters.undo.unlock_after
+	var r := p.apply_result({"id": after, "rewards": {}}, _won(after, 1))
+	assert_eq(p.booster_count("undo"), int(e.boosters.undo.gift))
+	assert_eq(int(r.boosters.get("undo", 0)), int(e.boosters.undo.gift))
+	assert_true(p.boosters_new.has("undo"), "yeni güçlendirici tanıtılmak üzere işaretlenir")
+	p.apply_result({"id": after, "rewards": {}}, _won(after, 1))
+	assert_eq(p.booster_count("undo"), int(e.boosters.undo.gift), "hediye ikinci kez verilmez")
+	var copy := PlayerProfile.from_state(JSON.parse_string(JSON.stringify(p.get_state())), e)
+	assert_eq(copy.booster_count("undo"), int(e.boosters.undo.gift), "kayıttan sonra da tekrar verilmez")
+
+
+func test_old_save_gets_gifts_for_already_unlocked_boosters() -> void:
+	var e := _booster_economy()
+	var after: String = e.boosters.undo.unlock_after
+	# Güçlendiriciler eklenmeden önceki bir kayıt: yalnızca ilerleme var.
+	var old := {"progress": {"best": {after: {"stars": 2, "score": 10, "completed": true}}}}
+	var p := PlayerProfile.from_state(old, e)
+	assert_eq(p.booster_count("undo"), int(e.boosters.undo.gift))
+
+
+func test_developer_unlock_gives_no_gifts() -> void:
+	var p := PlayerProfile.create_new(_booster_economy())
+	p.progress.unlock_all = true
+	assert_true(p.is_booster_unlocked("relieve"))
+	p.apply_result({"id": "x", "rewards": {}}, {"level_id": "", "won": false, "stars": 0, "score": 0})
+	assert_eq(p.booster_count("relieve"), 0)
+
+
+func test_level_booster_reward_only_on_first_clear() -> void:
+	var p := PlayerProfile.create_new(_booster_economy())
+	var lv := {"id": "9-01", "rewards": {"coins_first": 10, "coins_repeat": 1, "boosters": {"swap": 2}}}
+	p.apply_result(lv, _won("9-01", 1))
+	assert_eq(p.booster_count("swap"), 2)
+	p.apply_result(lv, _won("9-01", 1))
+	assert_eq(p.booster_count("swap"), 2, "tekrar oynamada güçlendirici ödülü yok")
+
+
+func test_milestone_gives_diamonds_and_boosters_once() -> void:
+	var p := PlayerProfile.create_new(_booster_economy())
+	var r := p.apply_result({"id": "9-01", "rewards": {}}, _won("9-01", 3))
+	assert_eq(r.diamonds, 2)
+	assert_eq(p.wallet.balance("diamonds"), 2)
+	assert_eq(p.booster_count("crane"), 1)
+	p.apply_result({"id": "9-02", "rewards": {}}, _won("9-02", 3))
+	assert_eq(p.wallet.balance("diamonds"), 2, "eşik bir kez")
+
+
+func test_buy_booster_rules() -> void:
+	var e := _booster_economy()
+	var p := PlayerProfile.create_new(e)
+	assert_eq(p.buy_booster("undo"), "locked", "açılmamış güçlendirici satın alınmaz")
+	assert_eq(p.buy_booster("roket"), "unknown")
+	p.progress.unlock_all = true
+	var price := int(e.boosters.undo.price)
+	var coins := p.wallet.balance("coins")
+	assert_eq(p.buy_booster("undo"), "")
+	assert_eq(p.booster_count("undo"), 1)
+	assert_eq(p.wallet.balance("coins"), coins - price)
+	# Yetersiz bakiye: hiçbir şey değişmez.
+	p.wallet.spend("coins", p.wallet.balance("coins"), "test")
+	assert_eq(p.buy_booster("undo"), "funds")
+	assert_eq(p.booster_count("undo"), 1)
+	assert_eq(p.wallet.balance("coins"), 0)
+	# Envanter dolu: para harcanmaz.
+	p.wallet.add("coins", 100000, "test")
+	p.add_boosters("undo", 1000)
+	assert_eq(p.booster_count("undo"), e.inventory_cap, "envanter sınırı aşılmaz")
+	var before := p.wallet.balance("coins")
+	assert_eq(p.buy_booster("undo"), "cap")
+	assert_eq(p.wallet.balance("coins"), before)
+
+
+func test_corrupt_booster_state_is_sanitized() -> void:
+	var e := _booster_economy()
+	var p := PlayerProfile.from_state({
+		"boosters": {"undo": -4, "swap": 1e9, "roket": 5, "crane": "çok"},
+		"boosters_gifted": ["undo", "roket", 3, "undo"],
+		"boosters_new": "bozuk",
+	}, e)
+	assert_eq(p.booster_count("undo"), 0)
+	assert_eq(p.booster_count("swap"), e.inventory_cap)
+	assert_eq(p.booster_count("crane"), 0)
+	assert_false(p.boosters.has("roket"))
+	assert_eq(p.boosters_gifted, ["undo"] as Array[String])
+	assert_true(p.boosters_new.is_empty())

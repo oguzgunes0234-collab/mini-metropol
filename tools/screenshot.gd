@@ -6,7 +6,10 @@ extends SceneTree
 ##   godot --path . --rendering-driver opengl3 --resolution 540x960 -s res://tools/screenshot.gd -- \
 ##         --screen=play --level=1-04 --drops=12 --out=reports/shot.png [--locale=tr] [--debug]
 ##
-## --screen: levels | intro | play | pause | won | lost | free
+## --screen: levels | intro | play | pause | won | lost | free | shop | pick
+## --completed=N: önce ilk N bölüm tamamlanmış sayılır (güçlendiriciler açılır).
+## shop: satın alma paneli (--booster=extra_moves, --coins=N ile bakiye).
+## pick: vinç seçimi (alınabilecek binalar vurgulu).
 ## "lost" ekranı, sonuç panelini göstermek için bölümü birkaç hamleden sonra
 ## "hamleler bitti" ile sonlandırır (yalnızca arayüz kontrolü içindir).
 
@@ -35,11 +38,16 @@ func _run() -> void:
 	root.add_child(app)
 	await process_frame
 	var screen := String(_opts.screen)
+	# Örnek ilerleme: ilk N bölüm farklı yıldızlarla tamamlanmış.
+	for i in int(_opts.get("completed", "3" if screen == "levels" else "0")):
+		var lv: Dictionary = app.catalog.levels[i]
+		app.profile.apply_result(lv, {"level_id": lv.id, "won": true, "stars": 3 - i % 3, "score": 100})
+	if _opts.has("coins"):
+		var w: Wallet = app.profile.wallet
+		w.spend("coins", w.balance("coins"), "screenshot")
+		if int(_opts.coins) > 0:
+			w.add("coins", int(_opts.coins), "screenshot")
 	if screen == "levels":
-		# Örnek ilerleme: ilk bölge tamamlanmış (farklı yıldızlarla), ikinci bölge açık.
-		for i in int(_opts.get("completed", "3")):
-			var lv: Dictionary = app.catalog.levels[i]
-			app.profile.apply_result(lv, {"level_id": lv.id, "won": true, "stars": 3 - i % 3, "score": 100})
 		app.show_levels()
 		await _capture()
 		return
@@ -69,6 +77,16 @@ func _run() -> void:
 			app.progress.fails[gs.level.id] = 1
 			if not gs.session.is_finished():
 				gs.session._finish(false, "out_of_moves")
+		"shop":
+			# Gerçek akışta panel yalnızca envanter boşken açılır.
+			var id := String(_opts.get("booster", "extra_moves"))
+			app.profile.boosters[id] = 0
+			gs._refresh_boosters()
+			gs._open_shop(id)
+		"pick":
+			gs._on_booster_pressed("crane")
+			for i in 30:
+				await process_frame
 	if _flags.has("debug"):
 		gs.hud.toggle_debug()
 	gs.dropper.set_aim(gs.board.width * 0.5)

@@ -309,6 +309,8 @@ func _parse_rewards(raw: Dictionary, lv: Dictionary, where: String) -> void:
 	lv.rewards = {
 		"coins_first": _int(r, "coins_first", where + " rewards", 0, 100000),
 		"coins_repeat": _int(r, "coins_repeat", where + " rewards", 0, 100000),
+		# İsteğe bağlı: bölüm ilk kez tamamlanınca verilen güçlendiriciler.
+		"boosters": EconomyData.parse_booster_map(r.get("boosters"), where + " rewards", errors),
 	}
 
 

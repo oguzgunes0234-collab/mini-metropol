@@ -155,3 +155,124 @@ func test_free_play_has_no_goals_and_no_intro() -> void:
 	assert_true(gs._input_enabled)
 	assert_eq(gs.session.goals.goals.size(), 0)
 	assert_eq(gs.session.moves_left(), -1)
+
+
+# --- Güçlendiriciler ---
+
+## İlk n bölümü tamamlanmış oyuncuyla bölümü başlatır (giriş paneli geçilir).
+func _play_after(app: Node, completed: int, id: String) -> GameScreen:
+	for i in completed:
+		var lv: Dictionary = app.catalog.levels[i]
+		app.profile.apply_result(lv, {"level_id": lv.id, "won": true, "stars": 2, "score": 100})
+	app.play(id)
+	await tree.process_frame
+	var gs: GameScreen = app.screen
+	gs._on_start_pressed()
+	return gs
+
+
+func _saved_state() -> Dictionary:
+	return SaveStore.new(App.save_path).load_data()
+
+
+func test_booster_bar_hidden_until_unlocked() -> void:
+	var app := await _app()
+	app.play("1-01")
+	await tree.process_frame
+	var gs: GameScreen = app.screen
+	assert_eq(gs.boosters.visible_ids().size(), 0)
+	assert_false(gs.hud._bar.visible, "ilk bölümde güçlendirici çubuğu yok")
+	app.play("")
+	await tree.process_frame
+	assert_false(app.screen.hud._bar.visible, "serbest oyunda güçlendirici yok")
+
+
+func test_new_booster_is_introduced_once() -> void:
+	var app := await _app()
+	for i in 2:
+		var lv: Dictionary = app.catalog.levels[i]
+		app.profile.apply_result(lv, {"level_id": lv.id, "won": true, "stars": 2, "score": 100})
+	assert_true(app.profile.boosters_new.has("undo"))
+	app.play("1-03")
+	await tree.process_frame
+	var gs: GameScreen = app.screen
+	assert_false(app.profile.boosters_new.has("undo"), "tanıtım bir kez gösterilir")
+	assert_false(_saved_state().get("boosters_new", ["?"]).has("undo"), "tanıtım bilgisi kaydedilir")
+	assert_true(gs.hud._bar.visible)
+	assert_true(gs.hud.booster_button("undo") != null)
+
+
+func test_buy_and_use_when_out_of_stock() -> void:
+	var app := await _app()
+	var gs := await _play_after(app, 2, "1-03")
+	app.profile.boosters.undo = 0
+	await wait_cooldown(gs.session)
+	assert_true(gs.session.try_drop(300))
+	var coins: int = app.profile.wallet.balance("coins")
+	gs._on_booster_pressed("undo")
+	assert_true(gs.hud.is_shop_visible(), "envanter boşken satın alma paneli açılır")
+	assert_true(tree.paused, "panel açıkken oyun durur")
+	gs.hud.shop_button("Buy").pressed.emit()
+	await tree.process_frame
+	assert_false(tree.paused)
+	var price := int(app.profile.economy.boosters.undo.price)
+	assert_eq(app.profile.wallet.balance("coins"), coins - price)
+	assert_eq(app.profile.booster_count("undo"), 0, "satın alınan adet hemen kullanıldı")
+	assert_eq(gs.session.moves, 0, "bırakma geri alındı")
+	var saved := _saved_state()
+	assert_eq(int(saved.wallet.balances.coins), coins - price, "satın alma hemen kaydedilir")
+
+
+func test_not_enough_coins_offers_no_purchase() -> void:
+	var app := await _app()
+	var gs := await _play_after(app, 2, "1-03")
+	app.profile.boosters.undo = 0
+	app.profile.wallet.spend("coins", app.profile.wallet.balance("coins"), "test")
+	await wait_cooldown(gs.session)
+	gs.session.try_drop(300)
+	gs._on_booster_pressed("undo")
+	assert_true(gs.hud.is_shop_visible())
+	assert_true(gs.hud.shop_button("Buy") == null, "bakiye yetmezse satın al düğmesi yok")
+	gs.hud.shop_button("Cancel").pressed.emit()
+	assert_false(tree.paused)
+	assert_false(gs.hud.any_panel_visible())
+	assert_eq(gs.session.moves, 1, "hiçbir şey değişmedi")
+
+
+func test_unavailable_booster_explains_why() -> void:
+	var app := await _app()
+	var gs := await _play_after(app, 2, "1-03")
+	gs._on_booster_pressed("undo")
+	assert_false(gs.hud.is_shop_visible())
+	assert_eq(gs.hud.toast_text(), tr("BOOST_NOT_NOW_UNDO"), "neden kullanılamadığı yazılır")
+	assert_eq(app.profile.booster_count("undo"), int(app.profile.economy.boosters.undo.gift))
+
+
+func test_crane_pick_by_tapping_a_building() -> void:
+	var app := await _app()
+	var gs := await _play_after(app, 7, "1-08")
+	await wait_cooldown(gs.session)
+	gs.session.try_drop(200)
+	await physics_frames(150)
+	var target: Building = gs.session.board.buildings[0]
+	gs._on_booster_pressed("crane")
+	assert_true(gs._picking, "vinç seçimi başlar")
+	assert_true(gs.hud.toast_text() != "", "yönerge gösterilir")
+	var ev := InputEventMouseButton.new()
+	ev.button_index = MOUSE_BUTTON_LEFT
+	ev.pressed = true
+	ev.position = gs.board.to_global(target.position)
+	gs._unhandled_input(ev)
+	assert_false(gs._picking)
+	assert_eq(gs.session.held_level, target.level, "dokunulan bina alındı")
+	assert_eq(gs.dropper.level, target.level, "bırakıcıda alınan bina var")
+	# Bırakma: alınan bina, hamle harcamadan.
+	ev = InputEventMouseButton.new()
+	ev.button_index = MOUSE_BUTTON_LEFT
+	ev.pressed = false
+	ev.position = gs.board.to_global(Vector2(700, 0))
+	gs._aiming = true
+	gs._unhandled_input(ev)
+	await tree.process_frame
+	assert_eq(gs.session.held_level, 0)
+	assert_eq(gs.session.moves, 1, "yeniden bırakmak hamle harcamaz")

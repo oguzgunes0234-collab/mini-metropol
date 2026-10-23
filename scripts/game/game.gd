@@ -1,9 +1,9 @@
 class_name GameScreen
 extends Node2D
 ## Oyun ekranı: dokunma/fare girdisi, yerleşim, arayüz ve efektleri
-## GameSession'a bağlar. Bölüm kipinde giriş paneli, hedefler ve sonuç;
-## serbest kipte yalnızca puan. Oyun kuralları burada değil, GameSession
-## ve Board içindedir.
+## GameSession'a bağlar. Bölüm kipinde giriş paneli, hedefler, güçlendirici
+## çubuğu ve sonuç; serbest kipte yalnızca puan. Oyun kuralları burada değil,
+## GameSession, Board ve BoosterManager içindedir.
 
 signal exit_to_levels
 signal play_level(id: String)
@@ -13,8 +13,10 @@ signal profile_changed
 ## Tasarım yüksekliği: içerik bu yüksekliğe göre yerleştirilir, daha uzun
 ## ekranlarda dikey olarak ortalanır.
 const CONTENT_HEIGHT := 1920.0
-## Alanın altında bırakılan boşluk (ileride güçlendirici çubuğu için).
-const BOTTOM_SPACE := 110.0
+## Alanın altında bırakılan boşluk (güçlendirici çubuğu için).
+const BOTTOM_SPACE := 148.0
+## Vinç seçiminde parmakla dokunma payı (tasarım birimi).
+const PICK_SLOP := 30.0
 
 var catalog: LevelCatalog
 var profile: PlayerProfile
@@ -25,10 +27,13 @@ var dropper: Dropper
 var effects: Effects
 var session: GameSession
 var hud: Hud
+var boosters: BoosterManager
 
 var _aiming := false
 var _drop_pending := false
 var _input_enabled := false
+## Vinç: alınacak bina seçiliyor.
+var _picking := false
 
 
 ## Ekranı kurar ve bölümü (boş sözlükse serbest oyunu) başlatır.
@@ -76,8 +81,23 @@ func _build() -> void:
 	session.scored.connect(_on_scored)
 	session.finished.connect(_on_finished)
 	session.goals_changed.connect(func(): hud.set_goals(session.goals.summary()))
-	session.state_changed.connect(func(s: GameSession.State): hud.set_settling(s == GameSession.State.SETTLING))
-	session.dropped.connect(func(_level: int, _b: Building): hud.set_moves(session.moves, session.moves_limit))
+	session.state_changed.connect(func(s: GameSession.State):
+		hud.set_settling(s == GameSession.State.SETTLING)
+		_refresh_boosters())
+	session.moves_changed.connect(func(used: int, limit: int):
+		hud.set_moves(used, limit)
+		_refresh_boosters())
+	session.restored.connect(_on_restored)
+	session.cleared.connect(_on_cleared)
+	session.lifted.connect(_on_lifted)
+
+	boosters = BoosterManager.new()
+	boosters.setup(session, profile)
+	boosters.changed.connect(func():
+		_refresh_boosters()
+		profile_changed.emit())
+	hud.booster_pressed.connect(_on_booster_pressed)
+	hud.buy_confirmed.connect(_on_buy_confirmed)
 
 	get_viewport().size_changed.connect(_layout)
 
@@ -88,6 +108,7 @@ func _begin(show_intro: bool) -> void:
 	hud.hide_panels()
 	_drop_pending = false
 	_aiming = false
+	_set_picking(false)
 	data = catalog.base if level.is_empty() else catalog.data_for(level)
 	hud.set_data(data)
 	# Bırakıcı oturumdan önce kurulur: oturum başlarken sıradaki binayı ona bildirir.
@@ -101,10 +122,23 @@ func _begin(show_intro: bool) -> void:
 	hud.set_moves(0, session.moves_limit)
 	hud.set_goals(session.goals.summary())
 	hud.set_settling(false)
+	boosters.reset_attempt()
 	_layout()
 	_input_enabled = level.is_empty() or not show_intro
 	if not _input_enabled:
-		hud.show_intro(level, level.goals)
+		hud.show_intro(level, level.goals, _take_new_boosters(), profile.economy.boosters)
+
+
+## Bu bölümde ilk kez görülecek güçlendiriciler (bir kez tanıtılır).
+func _take_new_boosters() -> Array[String]:
+	var out: Array[String] = []
+	for id in boosters.visible_ids():
+		if profile.boosters_new.has(id):
+			out.append(id)
+			profile.boosters_new.erase(id)
+	if not out.is_empty():
+		profile_changed.emit()
+	return out
 
 
 func _on_start_pressed() -> void:
@@ -122,6 +156,7 @@ func _pause() -> void:
 func _resume() -> void:
 	hud.hide_panels()
 	get_tree().paused = false
+	_refresh_boosters()
 
 
 func _to_levels() -> void:
@@ -171,6 +206,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if not _input_enabled or get_tree().paused:
 		return
+	if _picking:
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			_pick_at(board.to_local(event.position))
+		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
 			_aiming = true
@@ -210,10 +249,140 @@ func _request_drop() -> void:
 func _on_queue_changed(current: int, upcoming: Array[int]) -> void:
 	dropper.set_level(current)
 	hud.set_next(upcoming[0] if not upcoming.is_empty() else 0)
+	_refresh_boosters()
+
+
+# --- Güçlendiriciler ---
+
+func _refresh_boosters() -> void:
+	if boosters == null:
+		return
+	var states: Array[Dictionary] = []
+	for id in boosters.visible_ids():
+		var reason := boosters.check(id)
+		var def := boosters.def(id)
+		states.append({
+			"id": id,
+			"count": profile.booster_count(id),
+			"price": int(def.price),
+			"amount": int(def.get("amount", 5)),
+			"active": reason == "" or reason == "none_owned",
+			"highlighted": _picking and id == "crane",
+		})
+	hud.set_boosters(states)
+
+
+func _on_booster_pressed(id: String) -> void:
+	if not _input_enabled or get_tree().paused or session.is_finished():
+		return
+	if _picking:
+		_set_picking(false)
+		if id == "crane":
+			return
+	_drop_pending = false
+	var reason := boosters.check(id)
+	match reason:
+		"":
+			if id == "crane":
+				_set_picking(true)
+			else:
+				_apply_booster(id)
+		"none_owned":
+			_open_shop(id)
+		"limit":
+			_toast(tr("BOOST_LIMIT") % int(boosters.def(id).per_level))
+		"not_now":
+			_toast(_not_now_text(id))
+
+
+func _apply_booster(id: String, target: Building = null) -> void:
+	var level_before := session.current_level()
+	if not boosters.use(id, target):
+		return
+	match id:
+		"undo":
+			effects.popup(Vector2(dropper.aim_x, float(data.section("drop").dropper_y) + 140.0), tr("BOOST_UNDONE"), UiKit.BOOSTER_COLORS.undo, 46)
+		"extra_moves":
+			effects.popup(Vector2(board.width * 0.5, 160.0), tr("BOOST_MOVES_ADDED") % int(boosters.def(id).amount), UiKit.BOOSTER_COLORS.extra_moves, 52)
+		"swap":
+			effects.merge_burst(Vector2(dropper.aim_x, float(data.section("drop").dropper_y)), data.radius(level_before), UiKit.BOOSTER_COLORS.swap)
+	if profile.setting("haptics") and OS.has_feature("mobile"):
+		Input.vibrate_handheld(25)
+
+
+func _not_now_text(id: String) -> String:
+	if session.held_level > 0 and (id == "swap" or id == "crane"):
+		return tr("BOOST_HOLDING")
+	if session.state == GameSession.State.SETTLING and id != "undo" and id != "extra_moves":
+		return tr("BOOST_NO_MOVES")
+	return tr("BOOST_NOT_NOW_" + id.to_upper())
+
+
+func _set_picking(value: bool) -> void:
+	_picking = value
+	if effects == null:
+		return
+	var targets: Array[Building] = []
+	if value:
+		for b in board.buildings:
+			if boosters.can_lift(b):
+				targets.append(b)
+	effects.set_pick_targets(targets)
+	hud.set_hint(tr("BOOST_PICK_HINT") if value else "")
+	_refresh_boosters()
+
+
+func _pick_at(p: Vector2) -> void:
+	var b := board.building_at(p, PICK_SLOP)
+	if b == null or not boosters.can_lift(b):
+		return
+	_set_picking(false)
+	_apply_booster("crane", b)
+
+
+func _open_shop(id: String) -> void:
+	get_tree().paused = true
+	var def := boosters.def(id)
+	hud.show_buy(id, def, profile.wallet.balance(def.price_kind))
+
+
+## Satın alma panelinde "Satın al ve kullan": bir adet alınır, panel kapanır
+## ve güçlendirici hemen kullanılır (vinçte seçim başlar).
+func _on_buy_confirmed(id: String) -> void:
+	var reason := boosters.buy(id)
+	_resume()
+	if reason == "":
+		_on_booster_pressed(id)
+	elif reason == "cap":
+		_toast(tr("SHOP_CAP") % profile.economy.inventory_cap)
+	else:
+		_toast(tr("SHOP_NOT_ENOUGH"))
+
+
+func _toast(text: String) -> void:
+	hud.show_toast(text, profile.setting("reduced_motion"))
+
+
+func _on_restored() -> void:
+	hud.set_score(session.score.score)
+	hud.set_goals(session.goals.summary())
+	_refresh_boosters()
+
+
+func _on_cleared(removed: Array[Dictionary]) -> void:
+	for r in removed:
+		var def := data.level_def(int(r.level))
+		effects.merge_burst(r.position, def.radius, UiKit.BOOSTER_COLORS.relieve)
+	_refresh_boosters()
+
+
+func _on_lifted(level: int, pos: Vector2) -> void:
+	effects.merge_burst(pos, data.radius(level), UiKit.BOOSTER_COLORS.crane)
 
 
 func _on_scored(points: int, total: int, info: Dictionary) -> void:
 	hud.set_score(total)
+	_refresh_boosters()
 	var def := data.level_def(info.level)
 	if info.kind == MergeResolver.Kind.LANDMARK:
 		effects.merge_burst(info.position, def.radius * 1.4, def.color)
@@ -231,6 +400,7 @@ func _on_scored(points: int, total: int, info: Dictionary) -> void:
 func _on_finished(result: Dictionary) -> void:
 	_drop_pending = false
 	_input_enabled = false
+	_set_picking(false)
 	var rewards := profile.apply_result(level, result)
 	profile_changed.emit()
 	var has_next := false
@@ -255,7 +425,8 @@ func _layout() -> void:
 	var offset_y := maxf(0.0, (vp.y - CONTENT_HEIGHT) * 0.5)
 	board.position = Vector2(roundf((vp.x - board.width) * 0.5), roundf(offset_y + CONTENT_HEIGHT - BOTTOM_SPACE - board.height))
 	board.queue_redraw()
-	hud.layout(vp, offset_y + _safe_top_inset(vp))
+	# Çubuk alanın altında (alan paneli 18 birim aşağı taşar).
+	hud.layout(vp, offset_y + _safe_top_inset(vp), board.position.y + board.height + 26.0, board.position.y + 70.0)
 
 
 ## Çentik/durum çubuğu için üstten bırakılacak boşluk (tasarım biriminde).

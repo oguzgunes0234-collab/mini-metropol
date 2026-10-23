@@ -152,3 +152,50 @@ tekrar oynamak gerekmemeli. Ayrıntı: [ECONOMY.md](ECONOMY.md).
 ## 18. Bölge adı çakışması
 3. bölgenin adı başta "Ticaret Merkezi" olacaktı; bu, 7. seviye bina
 "Ticaret Merkezi" ile karışacağı için "Çarşı Bölgesi" yapıldı.
+
+## 19. Güçlendirici seti
+İstenen beş güçlendirici şöyle somutlaştırıldı:
+- **Geri Al** (undo): son bırakmayı ve ardından olan her şeyi geri alır.
+- **Değiştir** (swap): şimdiki ve sıradaki binanın yerini değiştirir. "Rastgele
+  yeni bina" yerine bu seçildi: sonucu önceden görülür, şansa dayanmaz.
+- **Vinç** ("taşı"): alandaki bir binayı alıp istenen yere yeniden bırakma.
+  Fizikle sürüklemek yerine "al ve yeniden bırak" seçildi: binayı başka
+  binaların içinden geçirmek fizik motorunda ezilme/fırlama yaratırdı.
+- **Ek Hamle**: +5 hamle.
+- **Temizle** ("alanı rahatlat"): seviye 1–2 binaların hepsini kaldırır.
+Fiyat, bölüm başı sınır, açılma bölümü ve hediye adetleri
+`data/economy.json` içindedir (bkz. [ECONOMY.md](ECONOMY.md)).
+
+## 20. Geri al tek adımdır; araya giren güçlendirici geri almayı siler
+Geri al yalnızca son bırakmayı geri alır; art arda iki kez kullanılamaz.
+Değiştir, Vinç veya Temizle kullanılınca geri alma adımı silinir (sonraki
+bırakmaya kadar). Böylece geri al, parası ödenmiş başka bir güçlendiricinin
+etkisini sessizce bozamaz. Ek Hamle geri almayı silmez ve geri al ile
+kaybolmaz.
+
+## 21. Vinçle alınan binayı yeniden bırakmak hamle harcamaz
+Güçlendiricinin bedeli zaten ödendiği için yeniden bırakma ayrıca hamle
+saymaz. Elde bina varken Değiştir ve ikinci bir Vinç kullanılamaz.
+
+## 22. Güçlendiriciler serbest oyunda yok, bölüm bitince yok
+Serbest oyundaki en iyi puan adil kalsın diye. Bölüm sonucu çıktıktan sonra
+(kazanma/kaybetme) hiçbir güçlendirici kullanılamaz: bu, ödülün iki kez
+alınmasını engeller ve "kaybettin, devam etmek için satın al" baskısını
+ortadan kaldırır (karar 15 ile uyumlu). Ek Hamle, son hamleden sonra
+binalar yerleşirken (sonuç gelmeden) kullanılabilir.
+
+## 23. Satın alma yalnızca oyuncu isteyince
+Satın alma paneli yalnızca envanteri boş bir güçlendiriciye dokununca açılır.
+Bakiye yetmiyorsa yalnızca bilgi verilir. Tek adet, oyun içi parayla. Gerçek
+para, reklam, indirim ve geri sayım yoktur.
+
+## 24. Elmas: şimdilik yalnızca kazanılıyor
+Elmas yıldız eşiklerinden kazanılır ve kaydedilir, ama henüz harcama yeri
+yoktur (haritada bakiye ve "yakında" açıklaması görünür). Kullanım alanı
+sahibinin kararını bekliyor; öneri: şehir geliştirmede süs/kozmetik.
+
+## 25. Güçlendirici çubuğu için alan biraz yukarı alındı
+Alanın altındaki boşluk 110'dan 148 tasarım birimine çıktı; çubuk düğmeleri
+112 birim yüksekliğinde (iPhone SE'de ~40 pt; Apple'ın önerisi 44 pt). Daha
+yüksek düğme, 16:9 ekranlarda bırakıcıyı hedef rozetlerinin altına
+iterdi. Aşama 6'daki tasarım geçişinde yeniden ele alınacak.

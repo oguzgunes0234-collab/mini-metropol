@@ -47,6 +47,13 @@ func advance() -> int:
 	return level
 
 
+## Şimdiki binayla sıradakinin yerini değiştirir (güçlendirici "Değiştir").
+func swap_next() -> void:
+	var t := _queue[0]
+	_queue[0] = _queue[1]
+	_queue[1] = t
+
+
 func get_state() -> Dictionary:
 	# 64 bit RNG durumu JSON'da hassasiyet kaybetmesin diye metin olarak tutulur.
 	return {"seed": str(_rng.seed), "state": str(_rng.state), "queue": _queue.duplicate(), "scripted": _scripted.duplicate()}

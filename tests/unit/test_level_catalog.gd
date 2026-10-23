@@ -177,3 +177,13 @@ func test_level_in_coming_soon_region_is_reported() -> void:
 	d.levels[0].region = "green"
 	var c := LevelCatalog.from_dict(d, GameData.load_default(), _regions_dict())
 	assert_true("\n".join(c.errors).contains("coming_soon"))
+
+
+func test_level_booster_reward_is_validated() -> void:
+	var d := _levels_dict()
+	d.levels[0].rewards.boosters = {"roket": 1}
+	assert_true(_errors(d).contains("roket"))
+	d.levels[0].rewards.boosters = {"undo": 0}
+	assert_false(_catalog(d).is_valid(), "adet en az 1")
+	d.levels[0].rewards.boosters = {"undo": 2}
+	assert_true(_catalog(d).is_valid())

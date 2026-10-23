@@ -1,7 +1,8 @@
 class_name Hud
 extends CanvasLayer
 ## Oyun ekranı arayüzü: menü düğmesi, kalan hamle, puan, sıradaki bina,
-## bölüm hedefleri; giriş, duraklatma ve sonuç panelleri; geliştirici göstergesi.
+## bölüm hedefleri, güçlendirici çubuğu; giriş, duraklatma, satın alma ve
+## sonuç panelleri; kısa bilgi yazısı; geliştirici göstergesi.
 ## GEÇİCİ TASARIM: Aşama 6'da tasarım sistemiyle yeniden ele alınacak.
 
 signal start_pressed
@@ -10,6 +11,11 @@ signal resume_pressed
 signal restart_pressed
 signal levels_pressed
 signal next_pressed
+signal booster_pressed(id: String)
+## Satın alma panelinde "Satın al ve kullan".
+signal buy_confirmed(id: String)
+
+const BAR_HEIGHT := 112.0
 
 var data: GameData
 
@@ -28,7 +34,80 @@ var _debug_label: Label
 var _intro: Array
 var _pause: Array
 var _result: Array
+var _shop: Array
 var _chips: Array[UiKit.GoalChip] = []
+var _bar: HBoxContainer
+var _booster_buttons := {}
+var _toast: Label
+var _toast_tween: Tween
+var _hint_visible := false
+
+
+## Güçlendirici çubuğundaki düğme: simge, ad, adet (yoksa fiyat).
+class BoosterButton:
+	extends Control
+	signal pressed(id: String)
+	var id := ""
+	var count := 0
+	var price := 0
+	var amount := 5
+	var active := true
+	var highlighted := false
+
+	func _init(p_id: String) -> void:
+		id = p_id
+		custom_minimum_size = Vector2(184, Hud.BAR_HEIGHT)
+		mouse_filter = Control.MOUSE_FILTER_STOP
+		focus_mode = Control.FOCUS_NONE
+
+	## count: envanterdeki adet; price: tek adet fiyatı (adet 0 ise gösterilir);
+	## active: şu an kullanılabilir ya da satın alınabilir; highlighted: vinç seçimi sürüyor.
+	func set_state(p_count: int, p_price: int, p_amount: int, p_active: bool, p_highlighted: bool) -> void:
+		count = p_count
+		price = p_price
+		amount = p_amount
+		active = p_active
+		highlighted = p_highlighted
+		modulate.a = 1.0 if active or highlighted else 0.42
+		queue_redraw()
+
+	func _gui_input(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+			accept_event()
+			if not event.pressed and Rect2(Vector2.ZERO, size).has_point(event.position):
+				pressed.emit(id)
+
+	func _draw() -> void:
+		var bg := StyleBoxFlat.new()
+		bg.bg_color = UiKit.STAR.lightened(0.6) if highlighted else UiKit.PAPER
+		bg.set_corner_radius_all(28)
+		bg.border_color = UiKit.ACCENT if highlighted else UiKit.INK.lightened(0.6)
+		bg.set_border_width_all(5 if highlighted else 3)
+		bg.draw(get_canvas_item(), Rect2(Vector2.ZERO, size))
+		UiKit.draw_booster_icon(self, id, Vector2(size.x * 0.5, 44), 30, amount)
+		var font := ThemeDB.fallback_font
+		var name := UiKit.booster_name(id)
+		var nw := font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, 24).x
+		draw_string(font, Vector2((size.x - nw) * 0.5, size.y - 14), name, HORIZONTAL_ALIGNMENT_LEFT, -1, 24, UiKit.INK)
+		if count > 0:
+			var c := Vector2(size.x - 28, 26)
+			draw_circle(c, 22, UiKit.INK, true, -1.0, true)
+			var t := str(count)
+			var tw := font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 26).x
+			draw_string(font, c + Vector2(-tw * 0.5, 9), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 26, UiKit.PAPER)
+		else:
+			# Envanterde yok: fiyat (madeni para) gösterilir.
+			var t := str(price)
+			var tw := font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 24).x
+			var pill := Rect2(size.x - tw - 52, 6, tw + 46, 38)
+			var ps := StyleBoxFlat.new()
+			ps.bg_color = Color("#FFF1CF")
+			ps.set_corner_radius_all(19)
+			ps.draw(get_canvas_item(), pill)
+			var cc := pill.position + Vector2(19, 19)
+			draw_circle(cc, 13, Color("#E39B1F"), true, -1.0, true)
+			draw_circle(cc, 9, Color("#F7CD6B"), true, -1.0, true)
+			draw_string(font, pill.position + Vector2(38, 28), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 24, UiKit.INK)
 
 
 class NextPreview:
@@ -92,8 +171,28 @@ func setup(p_data: GameData) -> void:
 	_debug_label.visible = false
 	_root.add_child(_debug_label)
 
+	_bar = HBoxContainer.new()
+	_bar.alignment = BoxContainer.ALIGNMENT_CENTER
+	_bar.add_theme_constant_override("separation", 14)
+	_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(_bar)
+
+	_toast = UiKit.label("", 32, UiKit.PAPER, HORIZONTAL_ALIGNMENT_CENTER)
+	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var toast_bg := StyleBoxFlat.new()
+	toast_bg.bg_color = Color(UiKit.INK, 0.92)
+	toast_bg.set_corner_radius_all(28)
+	toast_bg.content_margin_left = 28
+	toast_bg.content_margin_right = 28
+	toast_bg.content_margin_top = 16
+	toast_bg.content_margin_bottom = 16
+	_toast.add_theme_stylebox_override("normal", toast_bg)
+	_toast.visible = false
+	_root.add_child(_toast)
+
 	_intro = UiKit.overlay(_root)
 	_pause = UiKit.overlay(_root)
+	_shop = UiKit.overlay(_root)
 	_result = UiKit.overlay(_root)
 
 
@@ -104,8 +203,10 @@ func set_data(p_data: GameData) -> void:
 	_next_preview.shape_mode = data.section("physics").shape_mode
 
 
-## vp: görünür alan boyutu (tasarım birimi), top: güvenli alanın üst sınırı.
-func layout(vp: Vector2, top: float) -> void:
+## vp: görünür alan boyutu (tasarım birimi), top: güvenli alanın üst sınırı,
+## bar_y: güçlendirici çubuğunun üst kenarı, toast_y: bilgi yazısının üst
+## kenarı (alanın üst kısmı: vinç seçiminde alttaki binaları örtmesin).
+func layout(vp: Vector2, top: float, bar_y: float = -1.0, toast_y: float = -1.0) -> void:
 	var w := minf(vp.x, 1080.0)
 	var left := (vp.x - w) * 0.5
 	_top.position = Vector2(left, top)
@@ -130,6 +231,12 @@ func layout(vp: Vector2, top: float) -> void:
 	_settling_label.size = Vector2(w, 40)
 	_debug_label.position = Vector2(left + 24, vp.y - 110)
 	_debug_label.size = Vector2(w - 48, 100)
+	if bar_y < 0.0:
+		bar_y = vp.y - BAR_HEIGHT - 10.0
+	_bar.position = Vector2(left, bar_y)
+	_bar.size = Vector2(w, BAR_HEIGHT)
+	_toast.position = Vector2(left + 90, toast_y if toast_y >= 0.0 else bar_y - 150.0)
+	_toast.size = Vector2(w - 180, 0)
 
 
 func set_moves(used: int, limit: int) -> void:
@@ -165,9 +272,66 @@ func set_settling(value: bool) -> void:
 	_settling_label.visible = value
 
 
+# --- Güçlendirici çubuğu ---
+
+## states: [{id, count, price, amount, active, highlighted}], çubuk sırasıyla.
+## Liste boşsa çubuk gizlenir (serbest oyun, henüz açılmamış güçlendiriciler).
+func set_boosters(states: Array[Dictionary]) -> void:
+	var ids := states.map(func(st): return st.id)
+	if ids != _booster_buttons.keys():
+		UiKit.clear(_bar)
+		_booster_buttons.clear()
+		for id in ids:
+			var b := BoosterButton.new(id)
+			b.name = "Booster_" + id
+			b.pressed.connect(func(bid: String): booster_pressed.emit(bid))
+			_bar.add_child(b)
+			_booster_buttons[id] = b
+	for st in states:
+		_booster_buttons[st.id].set_state(st.count, st.price, st.amount, st.active, st.highlighted)
+	_bar.visible = not states.is_empty()
+
+
+func booster_button(id: String) -> Control:
+	return _booster_buttons.get(id)
+
+
+## Kısa bilgi yazısı (birkaç saniye sonra kaybolur).
+func show_toast(text: String, reduced_motion: bool = false) -> void:
+	_hint_visible = false
+	_toast.text = text
+	_toast.visible = true
+	_toast.modulate.a = 1.0
+	if _toast_tween != null:
+		_toast_tween.kill()
+	_toast_tween = create_tween()
+	_toast_tween.tween_interval(2.0)
+	if reduced_motion:
+		_toast_tween.tween_callback(func(): _toast.visible = false)
+	else:
+		_toast_tween.tween_property(_toast, "modulate:a", 0.0, 0.35)
+		_toast_tween.tween_callback(func(): _toast.visible = false)
+
+
+## Kalıcı yönerge (vinç seçimi sırasında). Boş metin gizler.
+func set_hint(text: String) -> void:
+	if _toast_tween != null:
+		_toast_tween.kill()
+	_hint_visible = text != ""
+	_toast.text = text
+	_toast.modulate.a = 1.0
+	_toast.visible = _hint_visible
+
+
+func toast_text() -> String:
+	return _toast.text if _toast.visible else ""
+
+
 # --- Paneller ---
 
-func show_intro(level: Dictionary, goals: Array) -> void:
+## new_boosters: bu bölümde ilk kez kullanılabilecek güçlendiriciler (tanıtım),
+## booster_defs: economy.boosters (açıklamadaki sayılar ve hediye adedi için).
+func show_intro(level: Dictionary, goals: Array, new_boosters: Array[String] = [], booster_defs: Dictionary = {}) -> void:
 	var box: VBoxContainer = _intro[1]
 	UiKit.clear(box)
 	box.add_child(UiKit.label(tr("UI_LEVEL_FMT") % level.id, 32, UiKit.INK_SOFT, HORIZONTAL_ALIGNMENT_CENTER))
@@ -182,6 +346,9 @@ func show_intro(level: Dictionary, goals: Array) -> void:
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.custom_minimum_size = Vector2(640, 0)
 	box.add_child(hint)
+	for id in new_boosters:
+		box.add_child(UiKit.label(tr("UI_NEW_BOOSTER"), 28, UiKit.ACCENT))
+		box.add_child(_booster_row(id, booster_defs.get(id, {}), true))
 	var start := UiKit.button(tr("UI_START"), 44)
 	start.pressed.connect(func(): start_pressed.emit())
 	box.add_child(start)
@@ -252,13 +419,52 @@ func show_result(result: Dictionary, level: Dictionary, has_next: bool, best_sco
 	_show(_result)
 
 
+## Satın alma paneli. def: economy.boosters[id]; balance: oyuncunun bakiyesi
+## (fiyatın para biriminde). Bakiye yetmiyorsa yalnızca bilgi ve "Tamam" vardır:
+## gerçek parayla satın alma önerisi yoktur.
+func show_buy(id: String, def: Dictionary, balance: int) -> void:
+	var box: VBoxContainer = _shop[1]
+	UiKit.clear(box)
+	box.add_child(_booster_row(id, def, false))
+	box.add_child(UiKit.label(tr("BOOST_LIMIT") % int(def.per_level), 28, UiKit.INK_SOFT))
+	box.add_child(_amount_row(tr("SHOP_PRICE"), int(def.price), def.price_kind))
+	box.add_child(_amount_row(tr("SHOP_BALANCE"), balance, def.price_kind))
+	if balance >= int(def.price):
+		var buy := UiKit.button(tr("SHOP_BUY_AND_USE"), 42)
+		buy.name = "Buy"
+		buy.pressed.connect(func(): buy_confirmed.emit(id))
+		box.add_child(buy)
+		var cancel := UiKit.button(tr("UI_CANCEL"), 42, false)
+		cancel.name = "Cancel"
+		cancel.pressed.connect(func(): resume_pressed.emit())
+		box.add_child(cancel)
+	else:
+		var msg := UiKit.label(tr("SHOP_NOT_ENOUGH"), 32, UiKit.INK)
+		msg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		msg.custom_minimum_size = Vector2(640, 0)
+		box.add_child(msg)
+		var ok := UiKit.button(tr("UI_OK"), 42)
+		ok.name = "Cancel"
+		ok.pressed.connect(func(): resume_pressed.emit())
+		box.add_child(ok)
+	_show(_shop)
+
+
+func is_shop_visible() -> bool:
+	return _shop[0].visible
+
+
+func shop_button(button_name: String) -> Button:
+	return _shop[1].get_node_or_null(button_name)
+
+
 func hide_panels() -> void:
-	for p in [_intro, _pause, _result]:
+	for p in [_intro, _pause, _shop, _result]:
 		p[0].visible = false
 
 
 func any_panel_visible() -> bool:
-	return _intro[0].visible or _pause[0].visible or _result[0].visible
+	return _intro[0].visible or _pause[0].visible or _shop[0].visible or _result[0].visible
 
 
 func is_debug_visible() -> bool:
@@ -286,13 +492,62 @@ func _reward_line(line: Dictionary) -> Control:
 	var text := tr(line.key)
 	if line.key == "REWARD_NEW_STARS" or line.key == "REWARD_MILESTONE":
 		text = text % int(line.value)
+	elif line.key == "REWARD_BOOSTER_UNLOCKED":
+		text = text % UiKit.booster_name(String(line.booster))
 	var l := UiKit.label(text, 32, UiKit.INK_SOFT)
 	l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(l)
-	row.add_child(UiKit.CoinIcon.new(22))
-	var amount := UiKit.label("+%d" % int(line.coins), 34, UiKit.GOOD)
-	amount.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(amount)
+	if int(line.get("coins", 0)) > 0:
+		row.add_child(UiKit.CoinIcon.new(22))
+		row.add_child(_amount_label("+%d" % int(line.coins)))
+	if int(line.get("diamonds", 0)) > 0:
+		row.add_child(UiKit.DiamondIcon.new(22))
+		row.add_child(_amount_label("+%d" % int(line.diamonds)))
+	var boosters: Dictionary = line.get("boosters", {})
+	for id in boosters:
+		if int(boosters[id]) > 0:
+			row.add_child(UiKit.BoosterIcon.new(id, 22))
+			row.add_child(_amount_label("×%d" % int(boosters[id])))
+	return row
+
+
+func _amount_label(text: String) -> Label:
+	var l := UiKit.label(text, 34, UiKit.GOOD)
+	l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	return l
+
+
+## Güçlendirici simgesi, adı ve açıklaması. gift: açılış hediyesi adedini de yaz.
+func _booster_row(id: String, def: Dictionary, gift: bool) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 22)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(UiKit.BoosterIcon.new(id, 40, int(def.get("amount", 5))))
+	var col := VBoxContainer.new()
+	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.add_child(UiKit.label(UiKit.booster_name(id), 40, UiKit.INK))
+	var desc := UiKit.label(UiKit.booster_desc(id, def), 30, UiKit.INK_SOFT)
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc.custom_minimum_size = Vector2(540, 0)
+	col.add_child(desc)
+	if gift and int(def.get("gift", 0)) > 0:
+		col.add_child(UiKit.label(tr("UI_GIFT_FMT") % int(def.gift), 30, UiKit.GOOD))
+	row.add_child(col)
+	return row
+
+
+func _amount_row(caption: String, amount: int, kind: String) -> Control:
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 14)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var l := UiKit.label("%s:" % caption, 34, UiKit.INK_SOFT)
+	l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(l)
+	row.add_child(UiKit.DiamondIcon.new(22) if kind == "diamonds" else UiKit.CoinIcon.new(22))
+	var a := UiKit.label(str(amount), 36, UiKit.INK)
+	a.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(a)
 	return row
 
 

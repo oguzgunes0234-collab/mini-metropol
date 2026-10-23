@@ -193,6 +193,54 @@ func reset() -> void:
 	_set_danger_ratio(0.0)
 
 
+## Güçlendirici "Temizle": seviyesi max_level veya altındaki tüm binaları
+## kaldırır. Dönüş: [{level, position}] (efekt için). Kaldırılan değer
+## stats.cleared_value'da tutulur (değer korunumu denetimi için).
+func clear_small(max_level: int) -> Array[Dictionary]:
+	var removed: Array[Dictionary] = []
+	for b in buildings.duplicate():
+		if b.level <= max_level:
+			removed.append({"level": b.level, "position": b.position})
+			stats.cleared += 1
+			stats.cleared_value += GameData.value_of(b.level)
+			_remove(b)
+	return removed
+
+
+## Güçlendirici "Vinç": binayı alandan kaldırır ve seviyesini döndürür
+## (bulunamazsa 0). Bina yeniden bırakıldığında stats.dropped_value'ya
+## eklenir; o zamana kadar değeri stats.lifted_value'dadır.
+func lift(b: Building) -> int:
+	if b == null or b.consumed or not buildings.has(b):
+		return 0
+	var level := b.level
+	stats.lifted += 1
+	stats.lifted_value += GameData.value_of(level)
+	_remove(b)
+	return level
+
+
+## Verilen noktadaki (alan koordinatı) bina; yoksa null. slop: parmakla
+## dokunma için ek pay. Birden çok aday varsa merkezi en yakın olan.
+func building_at(p: Vector2, slop: float = 0.0) -> Building:
+	var best: Building = null
+	var best_d := INF
+	for b in buildings:
+		var d := b.position.distance_to(p)
+		if d <= b.current_radius() + slop and d < best_d:
+			best = b
+			best_d = d
+	return best
+
+
+func count_up_to(max_level: int) -> int:
+	var n := 0
+	for b in buildings:
+		if b.level <= max_level:
+			n += 1
+	return n
+
+
 func building_count() -> int:
 	return buildings.size()
 
@@ -278,9 +326,10 @@ func _remove(b: Building) -> void:
 
 ## Kurtarma (son çare): ağır bir yığın binayı kayayla duvar arasına
 ## sıkıştırıp duvarın içine iterse ve binanın merkezi duvar/zemin çizgisini
-## geçerse, bina sınıra geri konur ve duvara doğru hızı sıfırlanır. Bina
-## kaybolmaz. Daha erken (sığ gömülmede) müdahale etmek yığının içine
-## ışınlama yaptığı için döngü yaratıyordu (bkz. docs/DECISIONS.md, karar 16).
+## geçerse, bina alanın içindeki en yakın boş yere konur: önce sınırın hemen
+## içi, orası başka binalarla doluysa aynı sütunda yukarı doğru ilk boş yer
+## (bina oradan normal düşer). Bina kaybolmaz. Dolu yere koymak, yığın binayı
+## her karede yeniden duvara ittiği için döngü yaratıyordu (karar 16 ve 26).
 ## Normal oyunda çok nadirdir; doğrulama raporları sayısını gösterir.
 func _rescue_deep_penetrations() -> void:
 	if not rescue_enabled:
@@ -304,8 +353,43 @@ func _rescue_deep_penetrations() -> void:
 			fixed = true
 		if fixed:
 			stats.rescues += 1
-			b.position = p
+			var spot := _free_spot(b, p)
+			if spot != p:
+				v = Vector2.ZERO
+			b.position = spot
 			b.linear_velocity = v
+
+
+## Kurtarılan bina için boş yer: start (sınırın hemen içi) boşsa orası; değilse
+## aynı sütunda yukarı doğru ilk boş nokta (bırakma yüksekliğine kadar).
+## Hiç boş yer yoksa start.
+func _free_spot(b: Building, start: Vector2) -> Vector2:
+	var r := b.current_radius()
+	var step := maxf(r * 0.5, 20.0)
+	var p := start
+	while p.y >= _dropper_y:
+		if _is_free(b, p, r):
+			return p
+		p.y -= step
+	return start
+
+
+## p noktasında r yarıçaplı bina başka bina ya da engelle çakışmaz mı?
+func _is_free(b: Building, p: Vector2, r: float) -> bool:
+	for o in buildings:
+		if o != b and o.position.distance_to(p) < r + o.current_radius() - 1.0:
+			return false
+	for ob in obstacles:
+		if ob.shape == "circle":
+			if p.distance_to(Vector2(ob.x, ob.y)) < r + float(ob.r):
+				return false
+		else:
+			var local := (p - Vector2(ob.x, ob.y)).rotated(-deg_to_rad(float(ob.rot)))
+			var dx := maxf(absf(local.x) - float(ob.w) * 0.5, 0.0)
+			var dy := maxf(absf(local.y) - float(ob.h) * 0.5, 0.0)
+			if dx * dx + dy * dy < r * r:
+				return false
+	return true
 
 
 ## Son güvenlik ağı: alan dışına çıkan bina olursa kaydedilir ve kaldırılır.
@@ -394,6 +478,11 @@ func _reset_stats() -> void:
 		"out_of_bounds": 0,
 		"lost_value": 0,
 		"rescues": 0,
+		# Güçlendiriciler: "Temizle" ile kaldırılan, "Vinç" ile alınan binalar.
+		"cleared": 0,
+		"cleared_value": 0,
+		"lifted": 0,
+		"lifted_value": 0,
 	}
 
 

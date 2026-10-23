@@ -2,7 +2,7 @@ class_name LevelMap
 extends Control
 ## Bölüm haritası: bölgeler (mahalleler) renk bantları hâlinde alt alta;
 ## her bölgede bölümler zikzak bir yol üzerinde. Kilitli bölüme dokununca
-## gereken koşul gösterilir. Üstte madeni para ve toplam yıldız.
+## gereken koşul gösterilir. Üstte madeni para, elmas (varsa) ve toplam yıldız.
 ## GEÇİCİ TASARIM: Aşama 6'da görsel kimlikle yenilenecek.
 
 signal level_chosen(id: String)
@@ -23,6 +23,7 @@ var profile: PlayerProfile
 var _scroll: ScrollContainer
 var _canvas: MapCanvas
 var _coins_label: Label
+var _diamonds_label: Label
 var _stars_label: Label
 var _toast: Label
 var _toast_tween: Tween
@@ -172,6 +173,9 @@ func setup(p_catalog: LevelCatalog, p_profile: PlayerProfile) -> void:
 	add_child(bar)
 	_coins_label = UiKit.label("", 44, UiKit.INK)
 	bar.add_child(_coins_label)
+	_diamonds_label = UiKit.label("", 36, UiKit.INK)
+	bar.add_child(_diamonds_label)
+	bar.gui_input.connect(_on_bar_input)
 	_stars_label = UiKit.label("", 44, UiKit.INK)
 	bar.add_child(_stars_label)
 	var free := UiKit.button(tr("UI_FREE_PLAY"), 34, false, Vector2(300, 96))
@@ -202,6 +206,8 @@ func setup(p_catalog: LevelCatalog, p_profile: PlayerProfile) -> void:
 func refresh() -> void:
 	_canvas.rebuild()
 	_coins_label.text = str(profile.wallet.balance("coins"))
+	_diamonds_label.text = str(profile.wallet.balance("diamonds"))
+	_diamonds_label.visible = _has_diamonds()
 	_stars_label.text = "%d / %d" % [profile.progress.total_stars(), catalog.count() * 3]
 	get_node("TopBar").queue_redraw()
 
@@ -212,8 +218,11 @@ func _layout() -> void:
 	bar.position = Vector2.ZERO
 	bar.size = Vector2(vp.x, TOP_BAR)
 	var left := (vp.x - WIDTH) * 0.5
-	_coins_label.position = Vector2(left + 110, 66)
+	# Elmas varsa para ve elmas alt alta.
+	_coins_label.position = Vector2(left + 110, 30 if _has_diamonds() else 66)
 	_coins_label.size = Vector2(260, 60)
+	_diamonds_label.position = Vector2(left + 110, 108)
+	_diamonds_label.size = Vector2(260, 50)
 	_stars_label.position = Vector2(left + 440, 66)
 	_stars_label.size = Vector2(260, 60)
 	var free: Control = bar.get_node("FreePlay")
@@ -227,11 +236,26 @@ func _layout() -> void:
 
 func _draw_bar_icons(bar: Control) -> void:
 	var left := (get_viewport_rect().size.x - WIDTH) * 0.5
-	var c := Vector2(left + 70, 96)
+	var c := Vector2(left + 70, 60 if _has_diamonds() else 96)
 	bar.draw_circle(c, 30, Color("#F2B33D"), true, -1.0, true)
 	bar.draw_circle(c, 20, Color("#F7CD6B"), true, -1.0, true)
+	if _has_diamonds():
+		UiKit.draw_diamond(bar, Vector2(left + 70, 134), 26)
 	bar.draw_colored_polygon(UiKit.star_points(Vector2(left + 400, 96), 30), UiKit.STAR)
 	bar.draw_line(Vector2(0, TOP_BAR - 2), Vector2(bar.size.x, TOP_BAR - 2), Color(UiKit.INK, 0.12), 4.0)
+
+
+func _has_diamonds() -> bool:
+	return profile.wallet.balance("diamonds") > 0
+
+
+## Elmasa dokununca ne işe yarayacağı söylenir.
+func _on_bar_input(event: InputEvent) -> void:
+	if not (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed):
+		return
+	var left := (get_viewport_rect().size.x - WIDTH) * 0.5
+	if _has_diamonds() and Rect2(left + 30, 100, 300, 80).has_point(event.position):
+		_show_toast(tr("UI_DIAMONDS_SOON"))
 
 
 func _scroll_to_current() -> void:

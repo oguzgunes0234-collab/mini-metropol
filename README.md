@@ -30,6 +30,11 @@ Godot 4 ile geliştiriliyor.
 | `B` | Bina şeklini değiştir: daire ↔ yuvarlatılmış kare (deneysel) |
 | `U` (haritada) | Tüm bölümleri aç (geliştirici, kaydedilmez) |
 
+**Güçlendiriciler** alttaki çubuktadır ve ilk bölümlerde birer birer açılır
+(Geri Al, Değiştir, Ek Hamle, Vinç, Temizle). Düğmeye dokunmak kullanır;
+envanter boşsa oyun içi parayla satın alma paneli açılır. Vinç'te önce
+düğmeye, sonra taşımak istediğin binaya dokun. Ayrıntı: [ekonomi](docs/ECONOMY.md).
+
 ## Klasör yapısı
 
 | Klasör | İçerik |

@@ -30,3 +30,11 @@ shot won_1-01        540x960  --screen=won   --level=1-01
 shot lost_1-06       540x960  --screen=lost  --level=1-06 --drops=8
 shot pause_tablet    720x960  --screen=pause --level=1-09 --drops=6
 shot free_en_debug   540x960  --screen=free  --drops=30 --locale=en --debug
+# Güçlendiriciler (Aşama 5): ilk 9 bölüm tamamlanmış oyuncu.
+shot boosters_1-10   540x960  --screen=play  --level=1-10 --drops=12 --completed=9
+shot intro_new_1-03  540x960  --screen=intro --level=1-03 --completed=2
+shot shop_1-10       540x960  --screen=shop  --level=1-10 --drops=6 --completed=9 --booster=extra_moves
+shot shop_poor_1-10  540x960  --screen=shop  --level=1-10 --drops=6 --completed=9 --booster=relieve --coins=40
+shot pick_1-10       540x960  --screen=pick  --level=1-10 --drops=12 --completed=9
+shot won_rewards     540x960  --screen=won   --level=1-02 --completed=1
+shot levels_diamonds 540x960  --screen=levels --completed=20

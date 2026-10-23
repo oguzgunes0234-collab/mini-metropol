@@ -13,6 +13,12 @@ extends SceneTree
 ## birleşmeler sürerken bırakmaya devam eder; kullanılan hamle gerçek oyuna
 ## göre fazla çıkar. Son ayar her zaman gerçek hamle sınırıyla yapılmalıdır.
 ##
+## --boost=extra_moves,relieve: bot güçlendirici de kullanır (etkilerini ölçmek
+## için; envanter sınırsız, bölüm başı kullanım sınırı geçerli). Kural:
+## Ek Hamle hamleler bitince (hedef tamamlanmadıysa), Temizle tehlike
+## çizgisi dolmaya başlayınca kullanılır. Raporda deneme başına ortalama
+## güçlendirici kullanımı da yazılır.
+##
 ## Önemli: Bir botun bir bölümü en az bir kez kazanması, bölümün bu makinede
 ## çözülebilir olduğunu gösterir. Fizik motoru farklı cihazlarda birebir aynı
 ## sonucu vermediği için bu kesin bir kanıt değildir.
@@ -67,6 +73,14 @@ func _run() -> void:
 		PhysicsServer2D.space_set_param(board.get_world_2d().space, PhysicsServer2D.SPACE_PARAM_SOLVER_ITERATIONS, int(_opts.iters))
 	session.record_events = true
 
+	var boost := PackedStringArray()
+	if _opts.has("boost"):
+		boost = String(_opts.boost).split(",")
+	var sandbox := PlayerProfile.create_new(EconomyData.load_default())
+	sandbox.progress.unlock_all = true
+	var manager := BoosterManager.new()
+	manager.setup(session, sandbox)
+
 	var started := Time.get_ticks_msec()
 	var report := {"godot": Engine.get_version_info().string, "levels": []}
 	var total_violations := 0
@@ -81,13 +95,16 @@ func _run() -> void:
 		for bot_name in bots:
 			var kind := SimBot.kind_from_name(bot_name)
 			var attempts := int(_opts.planner_attempts) if kind == SimBot.Kind.PLANNER else int(_opts.attempts)
-			var stats := {"attempts": attempts, "wins": 0, "stars": [0, 0, 0, 0], "moves_on_win": [], "scores_on_win": [], "chains_on_win": [], "scores": [], "reasons": {}, "violations": 0, "rescues": 0}
+			var stats := {"attempts": attempts, "wins": 0, "stars": [0, 0, 0, 0], "moves_on_win": [], "scores_on_win": [], "chains_on_win": [], "scores": [], "reasons": {}, "violations": 0, "rescues": 0, "boosters_used": {}}
 			for a in attempts:
 				var bot := SimBot.new(kind, hash(lv.id) + a * 7919)
 				session.start_level(lv, cat.data_for(lv))
+				manager.reset_attempt()
 				var inv := Invariants.new()
 				var frames := 0
 				while not session.is_finished() and frames < max_frames:
+					if not boost.is_empty():
+						_use_boosters(manager, boost, sandbox)
 					if session.can_drop():
 						var x: float = await bot.choose(session, self)
 						if session.can_drop():
@@ -108,6 +125,8 @@ func _run() -> void:
 					stats.chains_on_win.append(session.score.best_chain)
 				stats.stars[int(session.result.get("stars", 0))] += 1
 				stats.scores.append(session.score.score)
+				for id in manager.used:
+					stats.boosters_used[id] = stats.boosters_used.get(id, 0) + manager.used[id]
 			total_violations += stats.violations
 			stats.win_rate = snappedf(float(stats.wins) / attempts, 0.01)
 			stats.moves_on_win_median = _median(stats.moves_on_win)
@@ -134,6 +153,17 @@ func _run() -> void:
 	md.store_string(_markdown(report, bots))
 	print("Rapor: ", out, "  ihlal: ", total_violations)
 	quit(0 if total_violations == 0 else 1)
+
+
+## Botun güçlendirici kuralı (bkz. --boost). Envanter hiç bitmez.
+func _use_boosters(manager: BoosterManager, boost: PackedStringArray, sandbox: PlayerProfile) -> void:
+	var session := manager.session
+	for id in boost:
+		sandbox.boosters[id] = 99
+	if boost.has("extra_moves") and session.state == GameSession.State.SETTLING and not session.goals.all_done():
+		manager.use("extra_moves")
+	if boost.has("relieve") and session.state == GameSession.State.PLAYING and session.board.danger_ratio > 0.25:
+		manager.use("relieve")
 
 
 func _markdown(report: Dictionary, bots: PackedStringArray) -> String:

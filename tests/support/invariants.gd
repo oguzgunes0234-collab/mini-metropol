@@ -5,6 +5,8 @@ extends RefCounted
 ## bununla kontrol eder:
 ## 1. Değer korunumu: iki seviye-n bina = bir seviye-(n+1). Toplam değer
 ##    bırakılan binaların değerine eşit kalmalı (çift ya da kayıp bina yok).
+##    Güçlendiricilerle kaldırılan ("Temizle") ve alınan ("Vinç") binalar
+##    ayrı sayaçlarda tutulur.
 ## 2. Bir bina en fazla bir kez birleşmeye girer; kaldırılan bina geri gelmez.
 ## 3. Puan, birleşme olaylarının puanlarının toplamına eşittir ve her olayın
 ##    puanı veriden hesaplanan değerle aynıdır (çift puan yok).
@@ -22,6 +24,7 @@ var _consumed := {}
 var _events_seen := 0
 var _points_sum := 0
 var _out_of_bounds_seen := 0
+var _epoch := 0
 
 
 ## Yeni oyuna geçerken sayaçları sıfırlar. Bulunan ihlaller, clear_violations
@@ -32,6 +35,7 @@ func reset(clear_violations: bool = false) -> void:
 	_events_seen = 0
 	_points_sum = 0
 	_out_of_bounds_seen = 0
+	_epoch = 0
 	if clear_violations:
 		violations.clear()
 
@@ -40,7 +44,8 @@ func check(session: GameSession) -> void:
 	checks += 1
 	var board := session.board
 
-	var held := board.total_value() + int(board.stats.landmark_value) + int(board.stats.lost_value)
+	var held := board.total_value() + int(board.stats.landmark_value) + int(board.stats.lost_value) \
+		+ int(board.stats.cleared_value) + int(board.stats.lifted_value)
 	var expected := int(board.stats.dropped_value) + int(board.stats.placed_value) + extra_value
 	if held != expected:
 		_violation("değer korunumu bozuldu: alandaki+anıt+kayıp=%d, beklenen=%d" % [held, expected])
@@ -49,6 +54,12 @@ func check(session: GameSession) -> void:
 		_violation("alan dışına çıkan bina (toplam %d)" % board.stats.out_of_bounds)
 		_out_of_bounds_seen = int(board.stats.out_of_bounds)
 
+	# Geri yükleme (geri al) olay kaydını kısaltır: kayıt baştan okunur.
+	if session.log_epoch != _epoch:
+		_epoch = session.log_epoch
+		_consumed.clear()
+		_events_seen = 0
+		_points_sum = 0
 	for i in range(_events_seen, session.event_log.size()):
 		var e: Dictionary = session.event_log[i]
 		for key in ["a", "b"]:

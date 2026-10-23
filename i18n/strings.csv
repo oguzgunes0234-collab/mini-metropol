@@ -128,3 +128,36 @@ HINT_3_07,"En dar arsa! Her bırakışı dikkatle seç.","The narrowest lot yet!
 HINT_3_08,"İki Ofis Binası lazım. İlkini bir kenarda tamamla.","You need two Office Buildings. Finish the first on one side."
 HINT_3_09,"Daha büyük binalar da düşer. Eğik bariyerin altındaki boşluğu kullan.","Bigger buildings drop too. Use the space under the tilted barrier."
 HINT_3_10,"Bölgenin finali: bir Gökdelen kur. Alanı düzenli tutmak her şeydir.","The district finale: build a Skyscraper. Keeping the lot tidy is everything."
+BOOSTER_UNDO,Geri Al,Undo
+BOOSTER_UNDO_DESC,"Son bıraktığın binayı ve ardından olan her şeyi geri alır. Hamlen iade edilir.","Takes back your last drop and everything that followed it. The move is refunded."
+BOOSTER_SWAP,Değiştir,Swap
+BOOSTER_SWAP_DESC,"Şimdiki binayla sıradaki binanın yerini değiştirir. Hamle harcamaz.","Swaps the current building with the next one. Costs no move."
+BOOSTER_CRANE,Vinç,Crane
+BOOSTER_CRANE_DESC,"Alandaki bir binayı (en fazla seviye %d) kaldırır; onu istediğin yere yeniden bırakırsın. Yeniden bırakmak hamle harcamaz.","Picks up a building (up to level %d) so you can drop it again anywhere. Re-dropping costs no move."
+BOOSTER_RELIEVE,Temizle,Clear
+BOOSTER_RELIEVE_DESC,"Alandaki en küçük binaları (seviye 1–%d) kaldırır. Puan vermez.","Removes the smallest buildings (levels 1–%d). Gives no points."
+BOOSTER_EXTRA_MOVES,Ek Hamle,Extra Moves
+BOOSTER_EXTRA_MOVES_DESC,"Bölüme %d hamle ekler. Son hamlenden sonra, sonuç gelmeden de kullanılabilir.","Adds %d moves. Can also be used after your last move, before the result."
+BOOST_LIMIT,"Bu bölümde en fazla %d kez kullanılabilir.","Can be used at most %d times in this level."
+BOOST_NOT_NOW_UNDO,Geri alınacak bir bırakma yok.,There is no drop to undo.
+BOOST_NOT_NOW_SWAP,Şimdiki ve sıradaki bina aynı.,The current and next buildings are the same.
+BOOST_NOT_NOW_CRANE,Şu an taşınabilecek bir bina yok.,There is no building to pick up right now.
+BOOST_NOT_NOW_RELIEVE,Alanda temizlenecek küçük bina yok.,There are no small buildings to clear.
+BOOST_NOT_NOW_EXTRA_MOVES,Şu an hamle eklenemez.,Moves can't be added right now.
+BOOST_HOLDING,Önce elindeki binayı bırak.,Drop the building you are holding first.
+BOOST_NO_MOVES,Hamle kalmadı.,No moves left.
+BOOST_PICK_HINT,"Taşımak istediğin binaya dokun. Vazgeçmek için Vinç'e yeniden dokun.","Tap the building to pick up. Tap Crane again to cancel."
+BOOST_UNDONE,Geri alındı,Undone
+BOOST_MOVES_ADDED,+%d hamle,+%d moves
+SHOP_PRICE,Fiyat,Price
+SHOP_BALANCE,Bakiyen,Your balance
+SHOP_BUY_AND_USE,Satın al ve kullan,Buy and use
+SHOP_NOT_ENOUGH,"Yeterli madeni paran yok. Bölümleri tamamlayarak ve yıldız toplayarak madeni para kazanabilirsin.","You don't have enough coins. Earn coins by completing levels and collecting stars."
+SHOP_CAP,Bu güçlendiriciden en fazla %d adet biriktirebilirsin.,You can hold at most %d of this booster.
+UI_CANCEL,Vazgeç,Cancel
+UI_OK,Tamam,OK
+UI_NEW_BOOSTER,YENİ GÜÇLENDİRİCİ,NEW BOOSTER
+UI_GIFT_FMT,Hediye: %d adet,Gift: %d
+REWARD_BOOSTERS,Güçlendirici ödülü,Booster reward
+REWARD_BOOSTER_UNLOCKED,Yeni güçlendirici: %s,New booster: %s
+UI_DIAMONDS_SOON,Elmaslar yakında şehrini geliştirmek için kullanılacak.,Diamonds will soon be used to develop your city.
