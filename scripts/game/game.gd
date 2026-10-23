@@ -196,6 +196,12 @@ func _unhandled_input(event: InputEvent) -> void:
 				_request_drop()
 			KEY_ESCAPE:
 				_pause()
+			KEY_1, KEY_2, KEY_3, KEY_4, KEY_5:
+				# Masaüstünde deneme kolaylığı: çubuktaki sıraya göre güçlendirici.
+				var ids := boosters.visible_ids()
+				var i: int = event.keycode - KEY_1
+				if i < ids.size():
+					_on_booster_pressed(ids[i])
 			KEY_B:
 				# Geliştirici: daire / yuvarlatılmış kare (deneysel) şekilleri karşılaştır.
 				var physics := catalog.base.section("physics")

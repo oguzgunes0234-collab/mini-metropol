@@ -28,6 +28,7 @@ Godot 4 ile geliştiriliyor.
 | `F3` | Geliştirici göstergesi (FPS, bina sayısı, fizik süresi) |
 | `Esc` | Duraklat |
 | `B` | Bina şeklini değiştir: daire ↔ yuvarlatılmış kare (deneysel) |
+| `1`–`5` | Çubuktaki sıraya göre güçlendirici |
 | `U` (haritada) | Tüm bölümleri aç (geliştirici, kaydedilmez) |
 
 **Güçlendiriciler** alttaki çubuktadır ve ilk bölümlerde birer birer açılır
