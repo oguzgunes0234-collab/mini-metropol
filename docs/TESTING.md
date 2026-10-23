@@ -68,14 +68,20 @@ Her fizik karesinden sonra:
 | Duran binada >%25 gömülme (adım) | 0 | 0 |
 | Oyun başına bırakma (ortanca / en az / en çok) | 113 / 77 / 166 | 136 / 69 / 209 |
 | Ulaşılan en yüksek seviye (oyun sayısı) | 6: 8, 7: 22, 8: 14 | 6: 1, 7: 7, 8: 22, 9: 5 |
-| Adım süresi ort. / %99 / en kötü (ms) | 0,32 / 1,27 / 9,4 | 0,27 / 1,14 / 11,6 |
+| Adım süresi ort. / %99 / en kötü (ms) | 0,33 / 1,11 / 25,9 | 0,27 / 1,01 / 12,6 |
 
 Notlar:
+- Aşama 5'te yeniden çalıştırıldı (her bırakmada geri al için anlık görüntü
+  alınıyor): sonuçlar Aşama 4 ile aynı oyunları üretti, ortalama adım süresi
+  değişmedi. En kötü değerler ölçüm sırasında aynı anda çalışan ekran
+  görüntüsü işinden etkilenmiş olabilir; nedeni doğrulanmadı.
 - Adım süresi fizik + oyun betikleridir, çizim hariç; **telefonda ölçülmedi**.
   120 Hz'de saniyede 120 adım çalışır. Ölçüm 5 süreç aynı anda çalışırken
   yapıldı; en kötü değerlerin nedeni doğrulanmadı.
-- 30 bölümün doğrulaması (her biri 66 deneme): 0 ihlal, 0 kurtarma. Bkz.
-  [LEVELS.md](LEVELS.md).
+- 30 bölümün doğrulaması: Aşama 4 turunda (her biri 66 deneme) 0 ihlal, 0
+  kurtarma. Aşama 5 turlarında (her biri 60 deneme, güçlendiricisiz ve
+  güçlendiricili) 2-09'da birer tek karelik ihlal ve 2–3 kurtarma; bina
+  kaybolmadı, kurtarma döngüsü yok. Bkz. [LEVELS.md](LEVELS.md), karar 26.
 
 ## Sınırlar
 

@@ -108,6 +108,9 @@ ayarlanmalıdır.
 
 Bkz. [LEVELS.md](LEVELS.md), "Güçlendiricilerle". Botlar yalnızca Ek Hamle'yi
 (hamleler bitince) ve Temizle'yi (tehlike çizgisi dolmaya başlayınca) kullandı.
+Özet (30 bölüm, her bot 900 deneme): rastgele bot %51 → %83, akıllı bot
+%76 → %94; deneme başına ortalama 1,13 / 0,66 güçlendirici. Kısa bölümlerde
+Ek Hamle çok güçlü; oyuncu testinden sonra yeniden ayarlanmalı.
 
 ## Bölge kilitleri
 

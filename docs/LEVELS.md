@@ -139,3 +139,70 @@ Notlar:
   (0/6) ama akıllı bot %47 kazandı.
 - 1-01 ve 1-02 bilerek kolay: öğretici bölümler.
 - Gerçek oyuncu verisi olmadan bu oranlar yalnızca karşılaştırma içindir.
+
+### Aşama 5 yeniden doğrulaması (bilgi)
+Aşama 5'te aynı 30 bölüm, son kodla ve farklı bir oynanma sırasıyla yeniden
+doğrulandı (rastgele ve akıllı bot, 30'ar deneme). Kazanma oranları yukarıdaki
+tabloyla birkaç puan oynuyor (ör. 1-04 rastgele %67 → %70). Fizik sonucu,
+o ana kadar oynanmış her şeye bağlı olduğu için bu beklenen bir oynamadır.
+Bu turda **2-09'da 1 tek karelik ihlal ve 2 son çare kurtarma** görüldü
+(Aşama 4'teki turda 0'dı). Bina kaybolmadı; ayrıntı: karar 26.
+
+## Güçlendiricilerle (Aşama 5, bot ölçümü)
+
+Aynı tohumlarla, aynı botlar güçlendirici kullanarak oynadı. Botun kuralı:
+**Ek Hamle** hamleler bitince (hedef tamamlanmadıysa), **Temizle** tehlike
+çizgisi dolmaya başlayınca; envanter sınırsız, bölüm başı sınırlar geçerli
+(Ek Hamle 2, Temizle 1). Geri Al, Değiştir ve Vinç botlarda ölçülmedi
+(bunlar oyuncunun kararına bağlı; bot taklidi anlamlı olmazdı).
+
+| Bölüm | Zorluk | Hamle | Rastgele: güçlendiricisiz → ile | Akıllı: güçlendiricisiz → ile | Deneme başına güçlendirici (rastgele / akıllı) |
+|---|---|---|---|---|---|
+| 1-01 | 1 | 12 | %100 → %100 | %100 → %100 | 0.5 / 0.0 |
+| 1-02 | 1 | 12 | %100 → %100 | %100 → %100 | 0.1 / 0.0 |
+| 1-03 | 2 | 8 | %83 → %100 | %100 → %100 | 1.1 / 0.8 |
+| 1-04 | 2 | 8 | %70 → %100 | %100 → %100 | 1.0 / 0.0 |
+| 1-05 | 2 | 26 | %80 → %100 | %90 → %100 | 0.8 / 0.4 |
+| 1-06 | 3 | 16 | %37 → %100 | %53 → %100 | 1.1 / 0.8 |
+| 1-07 | 3 | 35 | %37 → %60 | %83 → %97 | 1.5 / 0.8 |
+| 1-08 | 3 | 22 | %37 → %93 | %77 → %97 | 1.3 / 0.6 |
+| 1-09 | 4 | 25 | %60 → %87 | %60 → %93 | 1.3 / 1.1 |
+| 1-10 | 4 | 47 | %50 → %63 | %67 → %80 | 1.1 / 0.6 |
+| 2-01 | 2 | 16 | %70 → %100 | %77 → %100 | 0.6 / 0.4 |
+| 2-02 | 2 | 19 | %77 → %100 | %100 → %100 | 0.8 / 0.3 |
+| 2-03 | 3 | 13 | %63 → %100 | %63 → %100 | 0.8 / 0.6 |
+| 2-04 | 3 | 44 | %47 → %87 | %83 → %90 | 0.9 / 0.6 |
+| 2-05 | 3 | 12 | %70 → %93 | %90 → %97 | 0.7 / 0.7 |
+| 2-06 | 3 | 36 | %47 → %80 | %100 → %100 | 1.4 / 0.4 |
+| 2-07 | 4 | 22 | %43 → %90 | %67 → %100 | 1.1 / 0.6 |
+| 2-08 | 4 | 18 | %33 → %90 | %53 → %100 | 1.1 / 0.9 |
+| 2-09 | 4 | 44 | %10 → %77 | %53 → %93 | 1.5 / 1.2 |
+| 2-10 | 4 | 52 | %50 → %57 | %80 → %83 | 1.2 / 0.9 |
+| 3-01 | 3 | 30 | %50 → %83 | %77 → %97 | 1.0 / 0.6 |
+| 3-02 | 3 | 22 | %17 → %83 | %73 → %100 | 1.7 / 0.7 |
+| 3-03 | 3 | 20 | %43 → %100 | %90 → %100 | 1.2 / 0.8 |
+| 3-04 | 4 | 17 | %47 → %100 | %67 → %97 | 1.1 / 0.6 |
+| 3-05 | 4 | 24 | %27 → %53 | %50 → %80 | 1.7 / 1.1 |
+| 3-06 | 4 | 28 | %47 → %77 | %87 → %80 | 1.3 / 1.1 |
+| 3-07 | 4 | 20 | %43 → %80 | %60 → %97 | 1.2 / 0.9 |
+| 3-08 | 5 | 32 | %50 → %70 | %57 → %90 | 1.3 / 1.0 |
+| 3-09 | 5 | 64 | %23 → %33 | %47 → %90 | 1.9 / 0.7 |
+| 3-10 | 5 | 55 | %30 → %40 | %70 → %60 | 1.5 / 0.9 |
+
+Toplam: rastgele bot %51 → %83, akıllı bot %76 → %94 (her biri 900 deneme).
+Güçlendiricisiz: ihlal 1, kurtarma 2. Güçlendiricili: ihlal 1, kurtarma 3
+(ikisi de 2-09; bkz. karar 26).
+
+Yorum (varsayım, gerçek oyuncu verisi değil):
+- Güçlendiriciler etkili: kolay ve orta bölümlerin çoğu güçlendiriciyle %100'e
+  çıkıyor; en zor bölümler (2-10, 3-05, 3-09, 3-10) güçlendiriciyle de zor kalıyor.
+- Deneme başına ortalama kullanım: rastgele bot 1,13, akıllı bot 0,66.
+  Ücretsiz oyuncu açılışta 10, ilk bölge sonunda 14 ücretsiz güçlendirici
+  alıyor (bkz. [ECONOMY.md](ECONOMY.md)).
+- Ek Hamle'nin gücü kısa bölümlerde (8 hamlelik 1-03, 1-04) çok yüksek:
+  +5 hamle bölümü neredeyse ikiye katlıyor. Oyuncu testinden sonra bölüm
+  başı sınırın 1'e inmesi veya miktarın bölüm uzunluğuna göre ayarlanması
+  değerlendirilmeli (`data/economy.json`).
+- 3-06 ve 3-10'da akıllı botun oranı güçlendiriciyle biraz düştü (87 → 80,
+  70 → 60): Ek Hamle uzayan oyunlarda tehlike çizgisine takılmaya yol açabiliyor;
+  30 denemede bu fark istatistiksel gürültü içinde olabilir.
