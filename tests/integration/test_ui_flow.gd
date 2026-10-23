@@ -5,7 +5,15 @@ extends TestCase
 
 
 ## Her test kendi geçici kayıt dosyasıyla başlar (gerçek kayda dokunulmaz).
+## Uygulama ana menüyle açılır; bu yardımcı bölüm haritasına geçer.
 func _app() -> Node:
+	var app: Node = await _app_at_menu()
+	app.show_levels()
+	await tree.process_frame
+	return app
+
+
+func _app_at_menu() -> Node:
 	App.save_path = "user://test_ui_%d.json" % randi()
 	SaveStore.new(App.save_path).erase()
 	var app: Node = load("res://scenes/main.tscn").instantiate()
@@ -26,6 +34,7 @@ func _play_until_finished(gs: GameScreen, max_frames: int = 4000) -> void:
 
 func after_each() -> void:
 	tree.paused = false
+	TranslationServer.set_locale("en")
 	SaveStore.new(App.save_path).erase()
 	App.save_path = SaveStore.DEFAULT_PATH
 	await super.after_each()
@@ -78,7 +87,7 @@ func test_corrupt_save_does_not_crash() -> void:
 	var app: Node = load("res://scenes/main.tscn").instantiate()
 	add_node(app)
 	await tree.process_frame
-	assert_true(app.screen is LevelMap, "bozuk kayıtla da açılmalı")
+	assert_true(app.screen is MainMenu, "bozuk kayıtla da açılmalı")
 	assert_eq(app.profile.wallet.balance("coins"), EconomyData.load_default().start_coins, "temiz başlangıç")
 
 
@@ -276,3 +285,146 @@ func test_crane_pick_by_tapping_a_building() -> void:
 	await tree.process_frame
 	assert_eq(gs.session.held_level, 0)
 	assert_eq(gs.session.moves, 1, "yeniden bırakmak hamle harcamaz")
+
+
+
+# --- Ana menü ve ayarlar (Aşama 6) ---
+
+func test_app_starts_at_menu_and_navigates() -> void:
+	var app: Node = await _app_at_menu()
+	assert_true(app.screen is MainMenu, "uygulama ana menüyle açılır")
+	app.screen.play_pressed.emit()
+	await tree.process_frame
+	assert_true(app.screen is LevelMap, "Oyna → bölüm haritası")
+	app.screen.back_pressed.emit()
+	await tree.process_frame
+	assert_true(app.screen is MainMenu, "haritadan geri → ana menü")
+	app.screen.settings_pressed.emit()
+	await tree.process_frame
+	assert_true(app.screen is SettingsScreen)
+	app.screen.back_pressed.emit()
+	await tree.process_frame
+	assert_true(app.screen is MainMenu, "ayarlardan geri → geldiği ekran")
+	app.screen.free_play_pressed.emit()
+	await tree.process_frame
+	assert_true(app.screen is GameScreen and app.screen.level.is_empty(), "serbest oyun")
+
+
+func test_menu_shows_next_level() -> void:
+	var app: Node = await _app_at_menu()
+	assert_eq(app.screen.next_level().id, "1-01")
+	var lv: Dictionary = app.catalog.levels[0]
+	app.profile.apply_result(lv, {"level_id": lv.id, "won": true, "stars": 1, "score": 10})
+	assert_eq(app.screen.next_level().id, "1-02")
+
+
+func test_setting_change_is_saved_immediately() -> void:
+	var app: Node = await _app_at_menu()
+	app.show_settings("menu")
+	await tree.process_frame
+	var view: SettingsView = app.screen.view
+	var sw := view.switch("haptics")
+	assert_true(sw.on)
+	sw.on = false
+	sw.toggled.emit(false)
+	assert_eq(app.profile.setting("haptics"), false)
+	assert_eq(_saved_state().settings.haptics, false, "ayar hemen kaydedilir")
+
+
+func test_language_can_be_changed() -> void:
+	var app: Node = await _app_at_menu()
+	app.show_settings("menu")
+	await tree.process_frame
+	var view: SettingsView = app.screen.view
+	(view.find_child("Lang_tr", true, false) as Button).pressed.emit()
+	assert_eq(TranslationServer.get_locale(), "tr")
+	assert_eq(app.profile.setting("language"), "tr")
+	assert_eq(_saved_state().settings.language, "tr")
+	(view.find_child("Lang_en", true, false) as Button).pressed.emit()
+	assert_eq(TranslationServer.get_locale(), "en")
+
+
+func test_reset_progress_needs_confirmation_and_keeps_settings() -> void:
+	var app: Node = await _app_at_menu()
+	var lv: Dictionary = app.catalog.levels[0]
+	app.profile.apply_result(lv, {"level_id": lv.id, "won": true, "stars": 3, "score": 10})
+	app.profile.settings.haptics = false
+	app.show_settings("menu")
+	await tree.process_frame
+	var view: SettingsView = app.screen.view
+	(view.find_child("Reset", true, false) as Button).pressed.emit()
+	var confirm: Control = view.find_child("ResetConfirm", true, false)
+	assert_true(confirm.visible, "önce onay sorulur")
+	assert_true(app.progress.is_completed(lv.id), "onaysız hiçbir şey silinmez")
+	(confirm.find_child("CancelReset", true, false) as Button).pressed.emit()
+	assert_false(confirm.visible)
+	assert_true(app.progress.is_completed(lv.id))
+	(view.find_child("Reset", true, false) as Button).pressed.emit()
+	(confirm.find_child("ConfirmReset", true, false) as Button).pressed.emit()
+	await tree.process_frame
+	assert_false(app.progress.is_completed(lv.id), "ilerleme silindi")
+	assert_eq(app.profile.wallet.balance("coins"), EconomyData.load_default().start_coins)
+	assert_eq(app.profile.setting("haptics"), false, "ayarlar korunur")
+	assert_true(app.screen is MainMenu)
+	assert_false(_saved_state().progress.best.has(lv.id), "sıfırlama kaydedildi")
+
+
+func test_in_game_settings_from_pause() -> void:
+	var app := await _app()
+	app.play("1-01")
+	await tree.process_frame
+	var gs: GameScreen = app.screen
+	gs._on_start_pressed()
+	gs._pause()
+	(gs.hud._pause[1].find_child("Settings", true, false) as Button).pressed.emit()
+	assert_true(gs.hud.is_settings_visible())
+	var view: SettingsView = gs.hud._settings[1].get_child(1)
+	assert_true(view.find_child("Languages", true, false) == null, "oyun içinde dil seçimi yok")
+	assert_true(view.find_child("Reset", true, false) == null, "oyun içinde sıfırlama yok")
+	var sw := view.switch("reduced_motion")
+	sw.on = true
+	sw.toggled.emit(true)
+	assert_true(gs.effects.reduced_motion, "hareketi azalt hemen uygulanır")
+	assert_eq(_saved_state().settings.reduced_motion, true)
+	(gs.hud._settings[1].find_child("Close", true, false) as Button).pressed.emit()
+	assert_true(gs.hud._pause[0].visible, "kapatınca duraklatma paneline dönülür")
+	assert_true(tree.paused, "oyun hâlâ duraklatılmış")
+
+
+## Görünen her etkileşimli öğe en az TOUCH boyutunda, her yazı en az T_CAPTION.
+func _check_accessibility(root: Node, where: String) -> void:
+	var stack: Array[Node] = [root]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		if n is CanvasItem and not (n as CanvasItem).visible:
+			continue
+		for c in n.get_children():
+			stack.append(c)
+		if not (n is Control):
+			continue
+		var c := n as Control
+		var interactive := c is BaseButton or c is UiKit.IconButton or c is UiKit.Switch or c is Hud.BoosterButton
+		if interactive:
+			assert_true(c.size.y >= UiKit.TOUCH - 0.5 and c.size.x >= UiKit.TOUCH - 0.5,
+				"%s: %s dokunma hedefi küçük (%s)" % [where, c.name, c.size])
+		if c is Label:
+			assert_true(c.get_theme_font_size("font_size") >= UiKit.T_CAPTION, "%s: '%s' yazısı küçük" % [where, (c as Label).text])
+
+
+func test_screens_meet_touch_and_text_minimums() -> void:
+	var app: Node = await _app_at_menu()
+	await tree.process_frame
+	_check_accessibility(app.screen, "ana menü")
+	app.show_levels()
+	await tree.process_frame
+	_check_accessibility(app.screen, "harita")
+	app.show_settings("menu")
+	await tree.process_frame
+	_check_accessibility(app.screen, "ayarlar")
+	var gs := await _play_after(app, 9, "1-10")
+	await tree.process_frame
+	_check_accessibility(gs.hud._root, "oyun")
+	gs._pause()
+	_check_accessibility(gs.hud._root, "duraklatma")
+	gs._open_settings()
+	_check_accessibility(gs.hud._root, "oyun içi ayarlar")

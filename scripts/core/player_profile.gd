@@ -6,7 +6,9 @@ extends RefCounted
 ## yapılır (çift ödül ya da bedavaya satın alma olmaz).
 
 const STATE_VERSION := 1
-const DEFAULT_SETTINGS := {"sound": true, "music": true, "haptics": true, "reduced_motion": false}
+## language: "" (cihazın dili), "tr" veya "en".
+const DEFAULT_SETTINGS := {"sound": true, "music": true, "haptics": true, "reduced_motion": false, "language": ""}
+const LANGUAGES: Array[String] = ["", "tr", "en"]
 
 var progress := Progress.new()
 var wallet := Wallet.new()
@@ -91,6 +93,14 @@ func setting(key: String) -> Variant:
 	return settings.get(key, DEFAULT_SETTINGS.get(key))
 
 
+## Arayüz dili: ayar boşsa cihazın dili (Türkçe değilse İngilizce).
+func locale() -> String:
+	var lang := String(setting("language"))
+	if lang != "":
+		return lang
+	return "tr" if OS.get_locale_language() == "tr" else "en"
+
+
 # --- Güçlendiriciler ---
 
 func booster_count(id: String) -> int:
@@ -163,8 +173,12 @@ func set_state(s: Dictionary) -> void:
 	var st = s.get("settings", {})
 	if typeof(st) == TYPE_DICTIONARY:
 		for key in DEFAULT_SETTINGS:
-			if typeof(st.get(key)) == TYPE_BOOL:
-				settings[key] = st[key]
+			var v = st.get(key)
+			if typeof(v) != typeof(DEFAULT_SETTINGS[key]):
+				continue
+			if key == "language" and not LANGUAGES.has(v):
+				continue
+			settings[key] = v
 	milestones_claimed.clear()
 	var mc = s.get("milestones_claimed", [])
 	if typeof(mc) == TYPE_ARRAY:

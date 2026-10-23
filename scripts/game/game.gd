@@ -10,11 +10,6 @@ signal play_level(id: String)
 ## Oyuncu profili değişti (bölüm sonucu, ödül): kaydedilmeli.
 signal profile_changed
 
-## Tasarım yüksekliği: içerik bu yüksekliğe göre yerleştirilir, daha uzun
-## ekranlarda dikey olarak ortalanır.
-const CONTENT_HEIGHT := 1920.0
-## Alanın altında bırakılan boşluk (güçlendirici çubuğu için).
-const BOTTOM_SPACE := 148.0
 ## Vinç seçiminde parmakla dokunma payı (tasarım birimi).
 const PICK_SLOP := 30.0
 
@@ -76,6 +71,7 @@ func _build() -> void:
 	hud.restart_pressed.connect(func(): _begin(false))
 	hud.levels_pressed.connect(_to_levels)
 	hud.next_pressed.connect(_to_next)
+	hud.settings_pressed.connect(_open_settings)
 
 	session.queue_changed.connect(_on_queue_changed)
 	session.scored.connect(_on_scored)
@@ -151,6 +147,15 @@ func _pause() -> void:
 		return
 	get_tree().paused = true
 	hud.show_pause(level)
+
+
+## Duraklatma panelinden ayarlar. Değişiklikler hemen uygulanır ve kaydedilir.
+func _open_settings() -> void:
+	var view := hud.show_settings(profile, level)
+	view.changed.connect(func(key: String):
+		if key == "reduced_motion":
+			effects.reduced_motion = profile.setting("reduced_motion")
+		profile_changed.emit())
 
 
 func _resume() -> void:
@@ -428,19 +433,8 @@ func _tip_for(fails: int) -> String:
 
 func _layout() -> void:
 	var vp := get_viewport_rect().size
-	var offset_y := maxf(0.0, (vp.y - CONTENT_HEIGHT) * 0.5)
-	board.position = Vector2(roundf((vp.x - board.width) * 0.5), roundf(offset_y + CONTENT_HEIGHT - BOTTOM_SPACE - board.height))
+	var insets := App.safe_insets(vp)
+	var l := GameLayout.compute(vp, insets.x, insets.y, Vector2(board.width, board.height))
+	board.position = l.board_pos
 	board.queue_redraw()
-	# Çubuk alanın altında (alan paneli 18 birim aşağı taşar).
-	hud.layout(vp, offset_y + _safe_top_inset(vp), board.position.y + board.height + 26.0, board.position.y + 70.0)
-
-
-## Çentik/durum çubuğu için üstten bırakılacak boşluk (tasarım biriminde).
-func _safe_top_inset(vp: Vector2) -> float:
-	if not OS.has_feature("mobile"):
-		return 0.0
-	var win := DisplayServer.window_get_size()
-	if win.y <= 0:
-		return 0.0
-	var safe := DisplayServer.get_display_safe_area()
-	return float(safe.position.y) * vp.y / float(win.y)
+	hud.layout(vp, l)

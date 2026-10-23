@@ -2,14 +2,14 @@ class_name LevelMap
 extends Control
 ## Bölüm haritası: bölgeler (mahalleler) renk bantları hâlinde alt alta;
 ## her bölgede bölümler zikzak bir yol üzerinde. Kilitli bölüme dokununca
-## gereken koşul gösterilir. Üstte madeni para, elmas (varsa) ve toplam yıldız.
-## GEÇİCİ TASARIM: Aşama 6'da görsel kimlikle yenilenecek.
+## gereken koşul gösterilir. Üst çubuk: geri (ana menü), madeni para, elmas
+## (varsa), toplam yıldız ve ayarlar.
 
 signal level_chosen(id: String)
-signal free_play_chosen
+signal back_pressed
+signal settings_pressed
 
 const WIDTH := 1080.0
-const TOP_BAR := 190.0
 const HEADER := 230.0
 const STEP_Y := 175.0
 const NODE_R := 62.0
@@ -22,9 +22,13 @@ var profile: PlayerProfile
 
 var _scroll: ScrollContainer
 var _canvas: MapCanvas
-var _coins_label: Label
-var _diamonds_label: Label
-var _stars_label: Label
+var _bar: Control
+var _pills: HBoxContainer
+var _coins: UiKit.CurrencyPill
+var _diamonds: UiKit.CurrencyPill
+var _stars: UiKit.CurrencyPill
+var _back: UiKit.IconButton
+var _settings: UiKit.IconButton
 var _toast: Label
 var _toast_tween: Tween
 
@@ -109,7 +113,7 @@ class MapCanvas:
 			style.draw(get_canvas_item(), rect)
 			var title := TranslationServer.translate(r.name_key)
 			_center(font, title, 54, b.top + 80, UiKit.INK if b.unlocked else UiKit.INK_SOFT)
-			_center(font, map._region_status(r, b.unlocked), 32, b.top + 140, r.accent.darkened(0.25) if b.unlocked else UiKit.INK_SOFT)
+			_center(font, map._region_status(r, b.unlocked), 32, b.top + 140, UiKit.region_text(r.accent, r.color) if b.unlocked else UiKit.INK_SOFT)
 		# Yol
 		for i in range(1, nodes.size()):
 			var a: Dictionary = nodes[i - 1]
@@ -166,23 +170,32 @@ func setup(p_catalog: LevelCatalog, p_profile: PlayerProfile) -> void:
 	_canvas.mouse_filter = Control.MOUSE_FILTER_PASS
 	holder.add_child(_canvas)
 
-	var bar := ColorRect.new()
-	bar.color = UiKit.PAPER
-	bar.name = "TopBar"
-	bar.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(bar)
-	_coins_label = UiKit.label("", 44, UiKit.INK)
-	bar.add_child(_coins_label)
-	_diamonds_label = UiKit.label("", 36, UiKit.INK)
-	bar.add_child(_diamonds_label)
-	bar.gui_input.connect(_on_bar_input)
-	_stars_label = UiKit.label("", 44, UiKit.INK)
-	bar.add_child(_stars_label)
-	var free := UiKit.button(tr("UI_FREE_PLAY"), 34, false, Vector2(300, 96))
-	free.name = "FreePlay"
-	free.pressed.connect(func(): free_play_chosen.emit())
-	bar.add_child(free)
-	bar.draw.connect(func(): _draw_bar_icons(bar))
+	_bar = Control.new()
+	_bar.name = "TopBar"
+	_bar.mouse_filter = Control.MOUSE_FILTER_STOP
+	_bar.draw.connect(func():
+		_bar.draw_rect(Rect2(Vector2.ZERO, _bar.size), UiKit.PAPER)
+		_bar.draw_line(Vector2(0, _bar.size.y - 2), Vector2(_bar.size.x, _bar.size.y - 2), UiKit.LINE, 4.0))
+	add_child(_bar)
+	_back = UiKit.IconButton.new("back", tr("UI_BACK"))
+	_back.pressed.connect(func(): back_pressed.emit())
+	_bar.add_child(_back)
+	_settings = UiKit.IconButton.new("settings", tr("UI_SETTINGS"))
+	_settings.pressed.connect(func(): settings_pressed.emit())
+	_bar.add_child(_settings)
+	_pills = HBoxContainer.new()
+	_pills.alignment = BoxContainer.ALIGNMENT_CENTER
+	_pills.add_theme_constant_override("separation", UiKit.S_SM)
+	_pills.mouse_filter = Control.MOUSE_FILTER_PASS
+	_bar.add_child(_pills)
+	_coins = UiKit.CurrencyPill.new("coins")
+	_pills.add_child(_coins)
+	_diamonds = UiKit.CurrencyPill.new("diamonds")
+	_diamonds.mouse_filter = Control.MOUSE_FILTER_STOP
+	_diamonds.gui_input.connect(_on_diamonds_input)
+	_pills.add_child(_diamonds)
+	_stars = UiKit.CurrencyPill.new("stars")
+	_pills.add_child(_stars)
 
 	_toast = UiKit.label("", 34, UiKit.PAPER, HORIZONTAL_ALIGNMENT_CENTER)
 	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -205,56 +218,34 @@ func setup(p_catalog: LevelCatalog, p_profile: PlayerProfile) -> void:
 
 func refresh() -> void:
 	_canvas.rebuild()
-	_coins_label.text = str(profile.wallet.balance("coins"))
-	_diamonds_label.text = str(profile.wallet.balance("diamonds"))
-	_diamonds_label.visible = _has_diamonds()
-	_stars_label.text = "%d / %d" % [profile.progress.total_stars(), catalog.count() * 3]
-	get_node("TopBar").queue_redraw()
+	_coins.set_text(str(profile.wallet.balance("coins")))
+	_diamonds.set_text(str(profile.wallet.balance("diamonds")))
+	_diamonds.visible = profile.wallet.balance("diamonds") > 0
+	_stars.set_text("%d / %d" % [profile.progress.total_stars(), catalog.count() * 3])
 
 
 func _layout() -> void:
 	var vp := get_viewport_rect().size
-	var bar: Control = get_node("TopBar")
-	bar.position = Vector2.ZERO
-	bar.size = Vector2(vp.x, TOP_BAR)
+	var top := App.safe_top(vp)
+	var bar_h := top + UiKit.TOUCH + UiKit.S_MD * 2
+	_bar.position = Vector2.ZERO
+	_bar.size = Vector2(vp.x, bar_h)
 	var left := (vp.x - WIDTH) * 0.5
-	# Elmas varsa para ve elmas alt alta.
-	_coins_label.position = Vector2(left + 110, 30 if _has_diamonds() else 66)
-	_coins_label.size = Vector2(260, 60)
-	_diamonds_label.position = Vector2(left + 110, 108)
-	_diamonds_label.size = Vector2(260, 50)
-	_stars_label.position = Vector2(left + 440, 66)
-	_stars_label.size = Vector2(260, 60)
-	var free: Control = bar.get_node("FreePlay")
-	free.position = Vector2(left + WIDTH - 340, 48)
-	_scroll.position = Vector2(0, TOP_BAR)
-	_scroll.size = Vector2(vp.x, vp.y - TOP_BAR)
+	_back.position = Vector2(left + UiKit.S_MD, top + UiKit.S_MD)
+	_settings.position = Vector2(left + WIDTH - UiKit.S_MD - UiKit.TOUCH, top + UiKit.S_MD)
+	var pills_x := left + UiKit.S_MD * 2 + UiKit.TOUCH
+	_pills.position = Vector2(pills_x, top + UiKit.S_MD + (UiKit.TOUCH - 84) * 0.5)
+	_pills.size = Vector2(WIDTH - (pills_x - left) * 2, 84)
+	_scroll.position = Vector2(0, bar_h)
+	_scroll.size = Vector2(vp.x, vp.y - bar_h)
 	_toast.position = Vector2(left + 90, vp.y - 260)
 	_toast.size = Vector2(WIDTH - 180, 0)
-	bar.queue_redraw()
-
-
-func _draw_bar_icons(bar: Control) -> void:
-	var left := (get_viewport_rect().size.x - WIDTH) * 0.5
-	var c := Vector2(left + 70, 60 if _has_diamonds() else 96)
-	bar.draw_circle(c, 30, Color("#F2B33D"), true, -1.0, true)
-	bar.draw_circle(c, 20, Color("#F7CD6B"), true, -1.0, true)
-	if _has_diamonds():
-		UiKit.draw_diamond(bar, Vector2(left + 70, 134), 26)
-	bar.draw_colored_polygon(UiKit.star_points(Vector2(left + 400, 96), 30), UiKit.STAR)
-	bar.draw_line(Vector2(0, TOP_BAR - 2), Vector2(bar.size.x, TOP_BAR - 2), Color(UiKit.INK, 0.12), 4.0)
-
-
-func _has_diamonds() -> bool:
-	return profile.wallet.balance("diamonds") > 0
+	_bar.queue_redraw()
 
 
 ## Elmasa dokununca ne işe yarayacağı söylenir.
-func _on_bar_input(event: InputEvent) -> void:
-	if not (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed):
-		return
-	var left := (get_viewport_rect().size.x - WIDTH) * 0.5
-	if _has_diamonds() and Rect2(left + 30, 100, 300, 80).has_point(event.position):
+func _on_diamonds_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
 		_show_toast(tr("UI_DIAMONDS_SOON"))
 
 

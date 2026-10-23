@@ -3,7 +3,7 @@ extends CanvasLayer
 ## Oyun ekranı arayüzü: menü düğmesi, kalan hamle, puan, sıradaki bina,
 ## bölüm hedefleri, güçlendirici çubuğu; giriş, duraklatma, satın alma ve
 ## sonuç panelleri; kısa bilgi yazısı; geliştirici göstergesi.
-## GEÇİCİ TASARIM: Aşama 6'da tasarım sistemiyle yeniden ele alınacak.
+## Yerleşim GameLayout'tan gelir; görünüm UiKit belirteçlerini kullanır.
 
 signal start_pressed
 signal pause_pressed
@@ -12,22 +12,20 @@ signal restart_pressed
 signal levels_pressed
 signal next_pressed
 signal booster_pressed(id: String)
+signal settings_pressed
 ## Satın alma panelinde "Satın al ve kullan".
 signal buy_confirmed(id: String)
 
-const BAR_HEIGHT := 112.0
+const BAR_HEIGHT := GameLayout.BAR_HEIGHT
 
 var data: GameData
 
 var _root: Control
 var _top: Control
-var _pause_button: Button
-var _moves_caption: Label
-var _moves_label: Label
-var _score_caption: Label
-var _score_label: Label
-var _next_caption: Label
-var _next_preview: NextPreview
+var _pause_button: UiKit.IconButton
+var _moves_card: StatCard
+var _score_card: StatCard
+var _next_card: StatCard
 var _goals_row: HBoxContainer
 var _settling_label: Label
 var _debug_label: Label
@@ -35,6 +33,7 @@ var _intro: Array
 var _pause: Array
 var _result: Array
 var _shop: Array
+var _settings: Array
 var _chips: Array[UiKit.GoalChip] = []
 var _bar: HBoxContainer
 var _booster_buttons := {}
@@ -87,14 +86,14 @@ class BoosterButton:
 		UiKit.draw_booster_icon(self, id, Vector2(size.x * 0.5, 44), 30, amount)
 		var font := ThemeDB.fallback_font
 		var name := UiKit.booster_name(id)
-		var nw := font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, 24).x
-		draw_string(font, Vector2((size.x - nw) * 0.5, size.y - 14), name, HORIZONTAL_ALIGNMENT_LEFT, -1, 24, UiKit.INK)
+		var nw := font.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.T_CAPTION).x
+		draw_string(font, Vector2((size.x - nw) * 0.5, size.y - 14), name, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.T_CAPTION, UiKit.INK)
 		if count > 0:
 			var c := Vector2(size.x - 28, 26)
 			draw_circle(c, 22, UiKit.INK, true, -1.0, true)
 			var t := str(count)
-			var tw := font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 26).x
-			draw_string(font, c + Vector2(-tw * 0.5, 9), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 26, UiKit.PAPER)
+			var tw := font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.T_CAPTION).x
+			draw_string(font, c + Vector2(-tw * 0.5, 10), t, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.T_CAPTION, UiKit.PAPER)
 		else:
 			# Envanterde yok: fiyat (madeni para) gösterilir.
 			var t := str(price)
@@ -110,19 +109,38 @@ class BoosterButton:
 			draw_string(font, pill.position + Vector2(38, 28), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 24, UiKit.INK)
 
 
-class NextPreview:
+## Üst sıradaki kart: küçük başlık + büyük değer (ya da sıradaki binanın çizimi).
+class StatCard:
 	extends Control
+	var caption := ""
+	var value := ""
+	var value_size := 64
+	var value_color := UiKit.INK
+	## 0'dan büyükse değer yerine bu seviyedeki bina çizilir.
+	var preview_level := 0
 	var data: GameData
-	var level := 0
 	var shape_mode := "circle"
 
+	func _init(p_caption: String, p_value_size: int = 64) -> void:
+		caption = p_caption
+		value_size = p_value_size
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
 	func _draw() -> void:
-		if data == null or level <= 0:
+		UiKit.flat_box(UiKit.PAPER, UiKit.R_MD, UiKit.LINE, 3).draw(get_canvas_item(), Rect2(Vector2.ZERO, size))
+		var f := UiKit.font()
+		var cw := f.get_string_size(caption, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.T_CAPTION).x
+		if preview_level > 0 and data != null:
+			draw_string(f, Vector2(22, size.y * 0.5 + 10), caption, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.T_CAPTION, UiKit.INK_SOFT)
+			var r := size.y * 0.36
+			draw_set_transform(Vector2(size.x - r - 22, size.y * 0.5))
+			BuildingArt.draw_building(self, data.level_def(preview_level), r, shape_mode, 1.0, true)
+			draw_set_transform(Vector2.ZERO)
 			return
-		var r := minf(size.x, size.y) * 0.42
-		draw_set_transform(size * 0.5)
-		BuildingArt.draw_building(self, data.level_def(level), r, shape_mode, 1.0, false)
-		draw_set_transform(Vector2.ZERO)
+		draw_string(f, Vector2((size.x - cw) * 0.5, 36), caption, HORIZONTAL_ALIGNMENT_LEFT, -1, UiKit.T_CAPTION, UiKit.INK_SOFT)
+		var hf := UiKit.font_heavy()
+		var vw := hf.get_string_size(value, HORIZONTAL_ALIGNMENT_LEFT, -1, value_size).x
+		draw_string(hf, Vector2((size.x - vw) * 0.5, size.y - 20), value, HORIZONTAL_ALIGNMENT_LEFT, -1, value_size, value_color)
 
 
 func setup(p_data: GameData) -> void:
@@ -137,25 +155,17 @@ func setup(p_data: GameData) -> void:
 	_top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_top)
 
-	_pause_button = UiKit.button(tr("HUD_PAUSE"), 34, true, Vector2(170, 96))
+	_pause_button = UiKit.IconButton.new("pause", tr("HUD_PAUSE"), true)
 	_pause_button.pressed.connect(func(): pause_pressed.emit())
 	_top.add_child(_pause_button)
 
-	_moves_caption = UiKit.label(tr("HUD_MOVES_LEFT"), 28, UiKit.INK_SOFT, HORIZONTAL_ALIGNMENT_CENTER)
-	_top.add_child(_moves_caption)
-	_moves_label = UiKit.label("0", 72, UiKit.INK, HORIZONTAL_ALIGNMENT_CENTER)
-	_top.add_child(_moves_label)
-	_score_caption = UiKit.label(tr("HUD_SCORE"), 28, UiKit.INK_SOFT, HORIZONTAL_ALIGNMENT_CENTER)
-	_top.add_child(_score_caption)
-	_score_label = UiKit.label("0", 52, UiKit.INK, HORIZONTAL_ALIGNMENT_CENTER)
-	_top.add_child(_score_label)
-
-	_next_caption = UiKit.label(tr("HUD_NEXT"), 28, UiKit.INK_SOFT, HORIZONTAL_ALIGNMENT_CENTER)
-	_top.add_child(_next_caption)
-	_next_preview = NextPreview.new()
-	_next_preview.data = data
-	_next_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_top.add_child(_next_preview)
+	_moves_card = StatCard.new(tr("HUD_MOVES_LEFT"), 64)
+	_top.add_child(_moves_card)
+	_score_card = StatCard.new(tr("HUD_SCORE"), 52)
+	_top.add_child(_score_card)
+	_next_card = StatCard.new(tr("HUD_NEXT"))
+	_next_card.data = data
+	_top.add_child(_next_card)
 
 	_goals_row = HBoxContainer.new()
 	_goals_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -163,11 +173,12 @@ func setup(p_data: GameData) -> void:
 	_goals_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_top.add_child(_goals_row)
 
-	_settling_label = UiKit.label(tr("HUD_SETTLING"), 30, UiKit.ACCENT, HORIZONTAL_ALIGNMENT_CENTER)
+	_settling_label = UiKit.label(tr("HUD_SETTLING"), UiKit.T_LABEL, UiKit.PAPER, HORIZONTAL_ALIGNMENT_CENTER)
+	_settling_label.add_theme_stylebox_override("normal", _pill_style(UiKit.ACCENT_TEXT))
 	_settling_label.visible = false
-	_top.add_child(_settling_label)
+	_root.add_child(_settling_label)
 
-	_debug_label = UiKit.label("", 26)
+	_debug_label = UiKit.label("", UiKit.T_CAPTION)
 	_debug_label.visible = false
 	_root.add_child(_debug_label)
 
@@ -177,82 +188,79 @@ func setup(p_data: GameData) -> void:
 	_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_bar)
 
-	_toast = UiKit.label("", 32, UiKit.PAPER, HORIZONTAL_ALIGNMENT_CENTER)
+	_toast = UiKit.label("", UiKit.T_LABEL, UiKit.PAPER, HORIZONTAL_ALIGNMENT_CENTER)
 	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var toast_bg := StyleBoxFlat.new()
-	toast_bg.bg_color = Color(UiKit.INK, 0.92)
-	toast_bg.set_corner_radius_all(28)
-	toast_bg.content_margin_left = 28
-	toast_bg.content_margin_right = 28
-	toast_bg.content_margin_top = 16
-	toast_bg.content_margin_bottom = 16
-	_toast.add_theme_stylebox_override("normal", toast_bg)
+	_toast.add_theme_stylebox_override("normal", _pill_style(Color(UiKit.INK, 0.94)))
 	_toast.visible = false
 	_root.add_child(_toast)
 
 	_intro = UiKit.overlay(_root)
 	_pause = UiKit.overlay(_root)
 	_shop = UiKit.overlay(_root)
+	_settings = UiKit.overlay(_root, 860)
 	_result = UiKit.overlay(_root)
+
+
+func _pill_style(bg: Color) -> StyleBoxFlat:
+	var sb := UiKit.flat_box(bg, UiKit.R_MD)
+	sb.content_margin_left = UiKit.S_MD
+	sb.content_margin_right = UiKit.S_MD
+	sb.content_margin_top = UiKit.S_SM
+	sb.content_margin_bottom = UiKit.S_SM
+	return sb
 
 
 ## Yeni bölüm/oyun için verileri tazeler (bölümler farklı kurallar kullanabilir).
 func set_data(p_data: GameData) -> void:
 	data = p_data
-	_next_preview.data = data
-	_next_preview.shape_mode = data.section("physics").shape_mode
+	_next_card.data = data
+	_next_card.shape_mode = data.section("physics").shape_mode
+	_next_card.queue_redraw()
 
 
-## vp: görünür alan boyutu (tasarım birimi), top: güvenli alanın üst sınırı,
-## bar_y: güçlendirici çubuğunun üst kenarı, toast_y: bilgi yazısının üst
-## kenarı (alanın üst kısmı: vinç seçiminde alttaki binaları örtmesin).
-func layout(vp: Vector2, top: float, bar_y: float = -1.0, toast_y: float = -1.0) -> void:
-	var w := minf(vp.x, 1080.0)
-	var left := (vp.x - w) * 0.5
-	_top.position = Vector2(left, top)
-	_top.size = Vector2(w, 320)
-	_pause_button.position = Vector2(36, 44)
-	_pause_button.size = Vector2(170, 96)
-	_moves_caption.position = Vector2(w * 0.5 - 250, 24)
-	_moves_caption.size = Vector2(220, 36)
-	_moves_label.position = Vector2(w * 0.5 - 250, 56)
-	_moves_label.size = Vector2(220, 96)
-	_score_caption.position = Vector2(w * 0.5 + 30, 24)
-	_score_caption.size = Vector2(220, 36)
-	_score_label.position = Vector2(w * 0.5 + 30, 66)
-	_score_label.size = Vector2(220, 80)
-	_next_caption.position = Vector2(w - 230, 24)
-	_next_caption.size = Vector2(190, 36)
-	_next_preview.position = Vector2(w - 195, 60)
-	_next_preview.size = Vector2(120, 110)
-	_goals_row.position = Vector2(20, 176)
-	_goals_row.size = Vector2(w - 40, 96)
-	_settling_label.position = Vector2(0, 278)
-	_settling_label.size = Vector2(w, 40)
-	_debug_label.position = Vector2(left + 24, vp.y - 110)
-	_debug_label.size = Vector2(w - 48, 100)
-	if bar_y < 0.0:
-		bar_y = vp.y - BAR_HEIGHT - 10.0
-	_bar.position = Vector2(left, bar_y)
+## l: GameLayout.compute sonucu; vp: görünür alan (tasarım birimi).
+func layout(vp: Vector2, l: Dictionary) -> void:
+	var w: float = l.width
+	var left: float = l.left
+	_top.position = Vector2(left, l.hud_top)
+	_top.size = Vector2(w, GameLayout.HUD_HEIGHT)
+	var row := GameLayout.HUD_ROW
+	var gap := 16.0
+	_pause_button.position = Vector2(24, GameLayout.HUD_PAD)
+	_pause_button.size = Vector2(row, row)
+	var x := 24.0 + row + gap
+	var card_w := (w - x - 24.0 - gap * 2.0) / 3.0
+	for card in [_moves_card, _score_card, _next_card]:
+		card.position = Vector2(x, GameLayout.HUD_PAD)
+		card.size = Vector2(card_w, row)
+		x += card_w + gap
+	_goals_row.position = Vector2(20, GameLayout.GOALS_Y)
+	_goals_row.size = Vector2(w - 40, GameLayout.GOALS_H)
+	_bar.position = Vector2(left, l.bar_y)
 	_bar.size = Vector2(w, BAR_HEIGHT)
-	_toast.position = Vector2(left + 90, toast_y if toast_y >= 0.0 else bar_y - 150.0)
+	_toast.position = Vector2(left + 90, l.toast_y)
 	_toast.size = Vector2(w - 180, 0)
+	_settling_label.position = Vector2(left + 180, l.toast_y + 110.0)
+	_settling_label.size = Vector2(w - 360, 0)
+	_debug_label.position = Vector2(left + 24, l.toast_y + 220.0)
+	_debug_label.size = Vector2(w - 48, 100)
 
 
 func set_moves(used: int, limit: int) -> void:
-	_moves_caption.text = tr("HUD_MOVES_LEFT")
-	_moves_label.text = str(limit - used) if limit > 0 else str(used)
+	_moves_card.value = str(limit - used) if limit > 0 else str(used)
 	var low := limit > 0 and limit - used <= 3
-	_moves_label.add_theme_color_override("font_color", UiKit.ACCENT if low else UiKit.INK)
+	_moves_card.value_color = UiKit.ACCENT_TEXT if low else UiKit.INK
+	_moves_card.queue_redraw()
 
 
 func set_score(value: int) -> void:
-	_score_label.text = str(value)
+	_score_card.value = str(value)
+	_score_card.queue_redraw()
 
 
 func set_next(level: int) -> void:
-	_next_preview.level = level
-	_next_preview.queue_redraw()
+	_next_card.preview_level = level
+	_next_card.queue_redraw()
 
 
 func set_goals(summary: Array) -> void:
@@ -347,7 +355,7 @@ func show_intro(level: Dictionary, goals: Array, new_boosters: Array[String] = [
 	hint.custom_minimum_size = Vector2(640, 0)
 	box.add_child(hint)
 	for id in new_boosters:
-		box.add_child(UiKit.label(tr("UI_NEW_BOOSTER"), 28, UiKit.ACCENT))
+		box.add_child(UiKit.label(tr("UI_NEW_BOOSTER"), UiKit.T_CAPTION, UiKit.ACCENT_TEXT))
 		box.add_child(_booster_row(id, booster_defs.get(id, {}), true))
 	var start := UiKit.button(tr("UI_START"), 44)
 	start.pressed.connect(func(): start_pressed.emit())
@@ -367,10 +375,35 @@ func show_pause(level: Dictionary) -> void:
 	var restart := UiKit.button(tr("PAUSE_RESTART"), 42, false)
 	restart.pressed.connect(func(): restart_pressed.emit())
 	box.add_child(restart)
+	var settings := UiKit.button(tr("UI_SETTINGS"), 42, false)
+	settings.name = "Settings"
+	settings.pressed.connect(func(): settings_pressed.emit())
+	box.add_child(settings)
 	var levels := UiKit.button(tr("PAUSE_TO_LEVELS"), 42, false)
 	levels.pressed.connect(func(): levels_pressed.emit())
 	box.add_child(levels)
 	_show(_pause)
+
+
+## Oyun içi ayarlar (duraklatma panelinden): dil ve sıfırlama yok.
+## Kapatınca duraklatma paneline dönülür. Dönüş: ayarlar içeriği.
+func show_settings(profile: PlayerProfile, level: Dictionary) -> SettingsView:
+	var box: VBoxContainer = _settings[1]
+	UiKit.clear(box)
+	box.add_child(UiKit.heading(tr("UI_SETTINGS"), UiKit.T_TITLE))
+	var view := SettingsView.new()
+	view.setup(profile, false, false)
+	box.add_child(view)
+	var close := UiKit.button(tr("UI_CLOSE"), 42)
+	close.name = "Close"
+	close.pressed.connect(func(): show_pause(level))
+	box.add_child(close)
+	_show(_settings)
+	return view
+
+
+func is_settings_visible() -> bool:
+	return _settings[0].visible
 
 
 ## Bölüm/oyun sonucu. tip: art arda başarısızlıktan sonra gösterilecek ipucu ("" ise yok).
@@ -385,7 +418,7 @@ func show_result(result: Dictionary, level: Dictionary, has_next: bool, best_sco
 		title = tr("RESULT_OUT_OF_MOVES")
 	else:
 		title = tr("RESULT_LOT_FULL")
-	box.add_child(UiKit.label(title, 60, UiKit.GOOD if result.won else UiKit.INK, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(UiKit.heading(title, UiKit.T_TITLE, UiKit.GOOD_TEXT if result.won else UiKit.INK))
 	if not level.is_empty():
 		box.add_child(UiKit.label("%s — %s" % [tr("UI_LEVEL_FMT") % level.id, tr(level.name_key)], 30, UiKit.INK_SOFT, HORIZONTAL_ALIGNMENT_CENTER))
 		if result.won:
@@ -459,12 +492,15 @@ func shop_button(button_name: String) -> Button:
 
 
 func hide_panels() -> void:
-	for p in [_intro, _pause, _shop, _result]:
+	for p in [_intro, _pause, _shop, _settings, _result]:
 		p[0].visible = false
 
 
 func any_panel_visible() -> bool:
-	return _intro[0].visible or _pause[0].visible or _shop[0].visible or _result[0].visible
+	for p in [_intro, _pause, _shop, _settings, _result]:
+		if p[0].visible:
+			return true
+	return false
 
 
 func is_debug_visible() -> bool:
@@ -512,7 +548,7 @@ func _reward_line(line: Dictionary) -> Control:
 
 
 func _amount_label(text: String) -> Label:
-	var l := UiKit.label(text, 34, UiKit.GOOD)
+	var l := UiKit.label(text, 34, UiKit.GOOD_TEXT)
 	l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	return l
 
@@ -531,7 +567,7 @@ func _booster_row(id: String, def: Dictionary, gift: bool) -> Control:
 	desc.custom_minimum_size = Vector2(540, 0)
 	col.add_child(desc)
 	if gift and int(def.get("gift", 0)) > 0:
-		col.add_child(UiKit.label(tr("UI_GIFT_FMT") % int(def.gift), 30, UiKit.GOOD))
+		col.add_child(UiKit.label(tr("UI_GIFT_FMT") % int(def.gift), 30, UiKit.GOOD_TEXT))
 	row.add_child(col)
 	return row
 

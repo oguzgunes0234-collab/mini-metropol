@@ -161,3 +161,29 @@ UI_GIFT_FMT,Hediye: %d adet,Gift: %d
 REWARD_BOOSTERS,Güçlendirici ödülü,Booster reward
 REWARD_BOOSTER_UNLOCKED,Yeni güçlendirici: %s,New booster: %s
 UI_DIAMONDS_SOON,Elmaslar yakında şehrini geliştirmek için kullanılacak.,Diamonds will soon be used to develop your city.
+GAME_TITLE,Mini Metropol,Mini Metropol
+MENU_TAGLINE,"Birleştir, büyüt, şehrini kur.","Merge, grow, build your city."
+MENU_PLAY,Oyna,Play
+MENU_NEXT_FMT,Sıradaki: Bölüm %s · %s,Next: Level %s · %s
+UI_SETTINGS,Ayarlar,Settings
+UI_BACK,Geri,Back
+UI_CLOSE,Kapat,Close
+SET_SECTION_SOUND,SES VE TİTREŞİM,SOUND AND HAPTICS
+SET_SOUND,Ses efektleri,Sound effects
+SET_MUSIC,Müzik,Music
+SET_HAPTICS,Titreşim,Haptics
+SET_AUDIO_SOON,Ses efektleri ve müzik yakında eklenecek; tercihin şimdiden kaydedilir.,Sound effects and music are coming soon; your choice is already saved.
+SET_SECTION_ACCESS,ERİŞİLEBİLİRLİK,ACCESSIBILITY
+SET_REDUCED_MOTION,Hareketi azalt,Reduce motion
+SET_REDUCED_MOTION_DESC,"Kayan yazıları, halkaları ve yanıp sönen vurguları sadeleştirir.","Simplifies floating text, rings and pulsing highlights."
+SET_SECTION_LANGUAGE,DİL,LANGUAGE
+LANG_TR,Türkçe,Türkçe
+LANG_EN,English,English
+SET_SECTION_DATA,VERİLER,DATA
+SET_RESET,İlerlemeyi sıfırla,Reset progress
+SET_RESET_CONFIRM_TITLE,Emin misin?,Are you sure?
+SET_RESET_CONFIRM,"Tüm bölüm ilerlemen, madeni paran, elmasların ve güçlendiricilerin silinecek. Bu işlem geri alınamaz.","All your level progress, coins, diamonds and boosters will be deleted. This cannot be undone."
+SET_RESET_DO,"Evet, sıfırla","Yes, reset"
+SET_SECTION_ABOUT,HAKKINDA,ABOUT
+SET_VERSION,Sürüm %s (geliştirme),Version %s (development)
+SET_FONT_CREDIT,Yazı tipi: Nunito (SIL Open Font License 1.1). Çizimler kodla üretilir.,Font: Nunito (SIL Open Font License 1.1). Artwork is generated in code.

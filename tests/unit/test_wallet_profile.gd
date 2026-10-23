@@ -251,3 +251,14 @@ func test_corrupt_booster_state_is_sanitized() -> void:
 	assert_false(p.boosters.has("roket"))
 	assert_eq(p.boosters_gifted, ["undo"] as Array[String])
 	assert_true(p.boosters_new.is_empty())
+
+
+
+func test_language_setting_is_sanitized() -> void:
+	var e := _economy()
+	assert_eq(PlayerProfile.from_state({"settings": {"language": "fr"}}, e).setting("language"), "")
+	assert_eq(PlayerProfile.from_state({"settings": {"language": 5}}, e).setting("language"), "")
+	var p := PlayerProfile.from_state({"settings": {"language": "en"}}, e)
+	assert_eq(p.locale(), "en")
+	p.settings.language = ""
+	assert_true(["tr", "en"].has(p.locale()), "boşsa cihaz diline göre tr veya en")

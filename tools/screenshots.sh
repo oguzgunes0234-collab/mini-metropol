@@ -22,7 +22,14 @@ shot() { # ad çözünürlük [ek argümanlar]
     | grep -E "Kaydedildi|SCRIPT ERROR|^ERROR: [^C]" || true
 }
 
+shot buildings       540x960  --screen=buildings
+shot menu            540x960  --screen=menu --completed=4
+shot menu_tall_notch 540x1170 --screen=menu --completed=4 --safe=163,94
+shot settings        540x960  --screen=settings
+shot settings_en     540x960  --screen=settings --locale=en
+shot game_settings   540x960  --screen=game_settings --level=1-04 --drops=4
 shot levels          540x960  --screen=levels
+shot play_notch      540x1170 --screen=play --level=1-10 --drops=10 --completed=9 --safe=163,94
 shot intro_1-04      540x960  --screen=intro --level=1-04
 shot play_1-07       540x960  --screen=play  --level=1-07 --drops=10
 shot play_1-10_tall  540x1170 --screen=play  --level=1-10 --drops=14

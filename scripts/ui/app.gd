@@ -1,8 +1,8 @@
 class_name App
 extends Node
-## Uygulama kökü: verileri ve oyuncu kaydını yükler, bölüm haritası ile oyun
-## ekranı arasında geçiş yapar. Kayıt her bölüm sonunda ve uygulama arka
-## plana alınınca/kapatılınca yazılır.
+## Uygulama kökü: verileri ve oyuncu kaydını yükler; ana menü, bölüm haritası,
+## ayarlar ve oyun ekranı arasında geçiş yapar. Kayıt her bölüm sonunda, her
+## ayar değişikliğinde ve uygulama arka plana alınınca/kapatılınca yazılır.
 
 ## Kayıt dosyasının yolu (testler geçici bir yol verir).
 static var save_path := SaveStore.DEFAULT_PATH
@@ -10,7 +10,7 @@ static var save_path := SaveStore.DEFAULT_PATH
 var catalog: LevelCatalog
 var profile: PlayerProfile
 var store: SaveStore
-## Şu an görünen ekran (LevelMap veya GameScreen).
+## Şu an görünen ekran (MainMenu, LevelMap, SettingsScreen veya GameScreen).
 var screen: Node
 
 ## Kısayol: oyuncunun bölüm ilerlemesi.
@@ -19,7 +19,12 @@ var progress: Progress:
 		return profile.progress
 
 
+## Testler ve araçlar için: güvenli alan payı (çentik), tasarım biriminde.
+static var safe_area_override := Vector2(-1, -1)
+
+
 func _ready() -> void:
+	UiKit.apply_global_theme()
 	var data := GameData.load_default()
 	var economy := EconomyData.load_default()
 	if not data.is_valid() or not economy.is_valid():
@@ -38,7 +43,8 @@ func _ready() -> void:
 		save()
 	else:
 		profile = PlayerProfile.from_state(saved, economy)
-	show_levels()
+	TranslationServer.set_locale(profile.locale())
+	show_menu()
 
 
 func save() -> void:
@@ -46,12 +52,44 @@ func save() -> void:
 		store.save_data(profile.get_state())
 
 
+func show_menu() -> void:
+	var menu := MainMenu.new()
+	menu.name = "Menu"
+	_swap(menu)
+	menu.setup(catalog, profile)
+	menu.play_pressed.connect(show_levels, CONNECT_DEFERRED)
+	menu.free_play_pressed.connect(play.bind(""), CONNECT_DEFERRED)
+	menu.settings_pressed.connect(show_settings.bind("menu"), CONNECT_DEFERRED)
+
+
 func show_levels() -> void:
 	var map := LevelMap.new()
+	map.name = "Map"
 	_swap(map)
 	map.setup(catalog, profile)
 	map.level_chosen.connect(play, CONNECT_DEFERRED)
-	map.free_play_chosen.connect(play.bind(""), CONNECT_DEFERRED)
+	map.back_pressed.connect(show_menu, CONNECT_DEFERRED)
+	map.settings_pressed.connect(show_settings.bind("map"), CONNECT_DEFERRED)
+
+
+## from: geri dönülecek ekran ("menu" veya "map").
+func show_settings(from: String) -> void:
+	var st := SettingsScreen.new()
+	st.name = "Settings"
+	_swap(st)
+	st.setup(profile)
+	st.changed.connect(func(_key: String): save())
+	st.back_pressed.connect(show_levels if from == "map" else show_menu, CONNECT_DEFERRED)
+	st.reset_confirmed.connect(reset_progress, CONNECT_DEFERRED)
+
+
+## Ayarlardaki "İlerlemeyi sıfırla" (onaydan sonra): yeni oyuncu profili, ayarlar korunur.
+func reset_progress() -> void:
+	var keep := profile.settings.duplicate()
+	profile = PlayerProfile.create_new(profile.economy)
+	profile.settings = keep
+	save()
+	show_menu()
 
 
 ## id boşsa serbest oyun.
@@ -78,6 +116,34 @@ func _notification(what: int) -> void:
 	# Uygulama arka plana alınırken ya da kapanırken kaydet.
 	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_WM_CLOSE_REQUEST:
 		save()
+	# Android geri tuşu: ayarlar/harita → bir önceki ekran, ana menü → çıkış.
+	# Oyun ekranı geri tuşunu kendisi ele alır (duraklatır).
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		if screen is SettingsScreen:
+			screen.back_pressed.emit()
+		elif screen is LevelMap:
+			show_menu.call_deferred()
+		elif screen is MainMenu:
+			save()
+			get_tree().quit()
+
+
+## Çentik/durum çubuğu (x) ve ana ekran çubuğu (y) payları, tasarım biriminde.
+static func safe_insets(vp: Vector2) -> Vector2:
+	if safe_area_override.x >= 0.0:
+		return safe_area_override
+	if not OS.has_feature("mobile"):
+		return Vector2.ZERO
+	var win := DisplayServer.window_get_size()
+	if win.y <= 0:
+		return Vector2.ZERO
+	var safe := DisplayServer.get_display_safe_area()
+	var scale := vp.y / float(win.y)
+	return Vector2(float(safe.position.y) * scale, float(win.y - safe.end.y) * scale)
+
+
+static func safe_top(vp: Vector2) -> float:
+	return safe_insets(vp).x
 
 
 func _unhandled_input(event: InputEvent) -> void:
