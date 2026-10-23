@@ -216,3 +216,36 @@ duvarın içinde görülebilir, sonraki karede yukarıya alınır; bina kaybolma
 Kalıcı çözüm adayları: kayaların duvara uzaklığını değiştirmek (cebe küçük
 binaların düşmemesi) ya da birleşmede yeni binanın sığıp sığmadığına bakmak.
 Gerçek cihaz testinde fark edilirse ele alınacak.
+
+## 27. Yazı tipi: Nunito (SIL OFL 1.1)
+Sıcak, yuvarlak hatlı ve küçük boyutta okunaklı olduğu için Nunito seçildi.
+Lisansı (OFL) oyunla birlikte dağıtıma izin verir. GitHub'daki Google Fonts
+deposuna bu oturumdan erişim olmadığı için dosyalar npm'deki resmî
+Fontsource paketinden (`@fontsource/nunito` 5.3.0) alındı; lisans metni
+`assets/fonts/OFL-Nunito.txt`. Türkçe harflerin bir kısmı (ğ, ş, İ)
+"latin-ext" dosyasında olduğundan iki dosya yedekli kullanılır; bir test
+tüm Türkçe harflerin bulunduğunu doğrular.
+
+## 28. Ana menü ve gezinme
+Uygulama artık ana menüyle açılır (şartnamedeki 1. ekran). "Oyna" haritaya
+götürür ve altında sıradaki bölüm yazar. Serbest Oyun haritadan menüye
+taşındı. Ayarlar hem menüden/haritadan (tam ekran) hem de duraklatma
+panelinden açılır; oyun içinde dil değişimi ve ilerleme sıfırlama yoktur
+(yarım kalan bölümü bozmamak için).
+
+## 29. Güvenli alan ve ekran oranları
+Yerleşim saf bir hesaba (`GameLayout`) taşındı ve 7 ekran tipinde test
+ediliyor. Önceki kodda çentik payı içerik ofsetine **ekleniyordu**; çentikli
+uzun telefonlarda bu, hedef rozetlerini bırakma bölgesine bindirirdi. Şimdi
+içerik güvenli alanın içinde ortalanıyor. 16:9 ekranda durum çubuğu
+görünürse yer kalmadığı için üst pay feda edilir; oyunda durum çubuğunun
+gizlenmesi dışa aktarma ayarında (Aşama 10) doğrulanacak.
+
+## 30. Dil ayarı
+Varsayılan: cihazın dili (Türkçe değilse İngilizce). Ayarlardan Türkçe veya
+English seçilebilir; seçim kaydedilir. Kayıttaki geçersiz değer yok sayılır.
+
+## 31. İlerlemeyi sıfırlama
+Ayarlarda kırmızı "İlerlemeyi sıfırla" düğmesi, ne silineceğini açıkça
+yazan bir onay paneli açar; "Vazgeç" hiçbir şeyi değiştirmez. Onaylanırsa
+ilerleme, para, elmas ve güçlendiriciler sıfırlanır, ayarlar korunur.

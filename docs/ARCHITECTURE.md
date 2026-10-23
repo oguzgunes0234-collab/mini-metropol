@@ -7,7 +7,9 @@ Godot 4.7 + GDScript. Dikey ekran, 1080×1920 tasarım çözünürlüğü,
 
 ```
 scenes/main.tscn
-└── App (scripts/ui/app.gd)                Ekran geçişleri, katalog, oyuncu profili ve kaydı
+└── App (scripts/ui/app.gd)                Ekran geçişleri, katalog, oyuncu profili ve kaydı, dil, güvenli alan
+    ├── MainMenu (ui/main_menu.gd)         Ana menü: siluet, Oyna, Serbest Oyun, Ayarlar
+    ├── SettingsScreen (ui/settings_screen.gd → SettingsView)  Ayarlar (oyun içinde de SettingsView)
     ├── LevelMap (ui/level_map.gd)         Bölge haritası: bölümler, yıldızlar, kilitler, para
     └── GameScreen (game/game.gd)          Oyun ekranı: girdi, yerleşim, paneller, efektler
         ├── Board (board.gd)               Fizik dünyası: duvarlar, engeller, binalar, birleşme, tehlike
@@ -36,7 +38,8 @@ scripts/core/   Ekrandan bağımsız, birim testli kurallar
                        satın alma tek yerden
     save_store.gd      Yerel kayıt: atomik yazma, yedek, sağlama, bozulmaya dayanıklı okuma
 
-scripts/ui/ui_kit.gd   Ortak arayüz parçaları (düğme, panel, yıldız, hedef rozeti)
+scripts/ui/ui_kit.gd       Tasarım sistemi: belirteçler, yazı tipi, bileşenler (bkz. DESIGN.md)
+scripts/game/game_layout.gd  Oyun ekranı yerleşimi (saf hesap, ekran oranı testli)
 ```
 
 Testler ve simülasyon `GameSession` + `Board` ikilisini arayüz olmadan kullanır;
@@ -63,7 +66,7 @@ PLAYING ──(son hamle)──> SETTLING ──(binalar durdu, hedef yok)──
 | SpawnController | `SpawnQueue` (sıra) + `Dropper` (nişan) | Var |
 | ScoreManager | `ScoreKeeper` | Var |
 | LevelManager | `LevelCatalog` (veri) + `LevelGoals` (hedef/yıldız) + `GameSession.start_level` | Var |
-| UIController | `App`, `LevelMap`, `GameScreen`, `Hud`, `UiKit` | Var |
+| UIController | `App`, `MainMenu`, `LevelMap`, `SettingsScreen`/`SettingsView`, `GameScreen`, `Hud`, `UiKit`, `GameLayout` | Var |
 | SaveManager | `SaveStore` + `PlayerProfile` | Var |
 | EconomyManager | `Wallet` + `EconomyData` + `PlayerProfile` (ödül, satın alma) | Var |
 | BoosterManager | `BoosterManager` (kurallar) + `GameSession` (etkiler) | Var |

@@ -15,8 +15,9 @@ Godot 4 ile geliştiriliyor.
 3. Godot'yu aç → **Import** → açtığın klasördeki `project.godot` dosyasını seç
    → **Import & Edit**.
 4. Sağ üstteki **▶ (Run Project)** düğmesine bas (kısayol: `Cmd+B`).
-   Bölge haritası açılır; ilk bölümden başla ya da **Serbest Oyun**'u seç.
-   İlerleme otomatik kaydedilir.
+   Ana menü açılır: **Oyna** bölge haritasına götürür; **Serbest Oyun** ve
+   **Ayarlar** (ses, titreşim, hareketi azalt, dil, ilerlemeyi sıfırla) da
+   buradadır. İlerleme ve ayarlar otomatik kaydedilir.
 
 ### Kontroller
 
@@ -43,12 +44,13 @@ düğmeye, sonra taşımak istediğin binaya dokun. Ayrıntı: [ekonomi](docs/EC
 | `data/` | Binalar, kurallar, bölümler, bölgeler ve ekonomi (JSON). Değerler buradan değiştirilir. |
 | `scripts/core/` | Ekrandan bağımsız oyun kuralları (birleşme, puan, sıradaki bina). |
 | `scripts/game/` | Oyun ekranı: bina, oyun alanı, oturum, bırakıcı, arayüz. |
-| `scripts/ui/` | Uygulama kökü, bölge haritası, ortak arayüz parçaları. |
+| `scripts/ui/` | Uygulama kökü, ana menü, bölge haritası, ayarlar, tasarım sistemi (`ui_kit.gd`). |
 | `scenes/` | Godot sahneleri. |
 | `i18n/` | Türkçe ve İngilizce metinler. |
 | `tests/` | Otomatik testler, tutarlılık denetimi, test botu. |
 | `tools/` | Kurulum, test, simülasyon, lint ve ekran görüntüsü betikleri. |
-| `docs/` | [Mimari](docs/ARCHITECTURE.md), [bölümler](docs/LEVELS.md), [ekonomi](docs/ECONOMY.md), [kararlar](docs/DECISIONS.md), [testler](docs/TESTING.md), [görsel lisansları](docs/ASSETS.md). |
+| `assets/` | Yazı tipi (Nunito, SIL OFL 1.1) ve lisans metni. |
+| `docs/` | [Mimari](docs/ARCHITECTURE.md), [tasarım sistemi](docs/DESIGN.md), [bölümler](docs/LEVELS.md), [ekonomi](docs/ECONOMY.md), [kararlar](docs/DECISIONS.md), [testler](docs/TESTING.md), [görsel lisansları](docs/ASSETS.md). |
 
 ## Geliştirici komutları (Linux)
 
